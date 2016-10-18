@@ -159,13 +159,9 @@ class DCGAN(object):
 
         sample_z = np.random.uniform(-1, 1, size=(self.sample_size , self.z_dim))
 
-        #G @F 
-        '''
-        Looks like sample_images are just to save some samples to look at later. 
-        What I'm doing may not work here. Need to check what reader.dequeue actually outputs. 
-        '''
+        #G @F Need to check what reader.dequeue actually outputs. 
         if config.dataset == 'wav':
-            sample_images = np.array([reader.dequeue(1) for i in range(self.sample_size)]).astype(np.float32)
+            sample_images = reader.dequeue(self.sample_size)
             # sample_size should be 1 anyway
         elif config.dataset == 'mnist':
             sample_images = data_X[0:self.sample_size]
@@ -295,9 +291,12 @@ class DCGAN(object):
                             time.time() - start_time, errD_fake+errD_real, errG))
 
                     if np.mod(counter, 100) == 1:
-                        #G @F again, I'm passing this because not sure of sample_images defined earlier
+                        #G
                         if config.dataset == 'wav':
-                            pass
+                            samples, d_loss, g_loss = self.sess.run(
+                                [self.sampler, self.d_loss, self.g_loss],
+                                feed_dict={self.z: sample_z, self.images: sample_images}
+                            )
                         elif config.dataset == 'mnist':
                             samples, d_loss, g_loss = self.sess.run(
                                 [self.sampler, self.d_loss, self.g_loss],
@@ -308,7 +307,7 @@ class DCGAN(object):
                                 [self.sampler, self.d_loss, self.g_loss],
                                 feed_dict={self.z: sample_z, self.images: sample_images}
                             )
-                        # G
+                        # G @F I'm passing saving wav files to you
                         if config.dataset == 'wav':
                             pass
                         else:
