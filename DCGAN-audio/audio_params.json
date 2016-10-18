@@ -1,0 +1,10 @@
+{
+    "sample_rate": 16000,
+    "silence_threshold": 0.3,
+    "z_dim": 16000,
+    "output_size": 10000,
+    "sample_size": 10000,
+    "batch_size": 1,
+    "num_steps":1000
+
+}

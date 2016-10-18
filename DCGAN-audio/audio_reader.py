@@ -1,3 +1,6 @@
+'''
+ Adapted from https://github.com/carpedm20/DCGAN-tensorflow
+'''
 import fnmatch
 import os
 import re

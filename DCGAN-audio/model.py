@@ -5,7 +5,8 @@ from glob import glob
 import tensorflow as tf
 import numpy as np
 from six.moves import xrange
-
+import json
+import AudioReader
 from ops import *
 from utils import *
 
@@ -13,8 +14,8 @@ class DCGAN(object):
     def __init__(self, sess, image_size=108, is_crop=True,
                  batch_size=64, sample_size = 64, output_size=64,
                  y_dim=None, z_dim=100, gf_dim=64, df_dim=64,
-                 gfc_dim=1024, dfc_dim=1024, c_dim=3, dataset_name='default',
-                 checkpoint_dir=None):
+                 gfc_dim=1024, dfc_dim=1024, c_dim=3, dataset_name='default', data_dir=None,
+                 audio_params=None, checkpoint_dir=None):
         """
 
         Args:
@@ -63,6 +64,13 @@ class DCGAN(object):
             self.g_bn3 = batch_norm(name='g_bn3')
 
         self.dataset_name = dataset_name
+        #G
+        self.data_dir = data_dir
+        if audio_params:
+            with open(audio_params, 'r') as f:
+                self.audio_params = json.load(f)
+
+
         self.checkpoint_dir = checkpoint_dir
         self.build_model()
 
@@ -118,7 +126,11 @@ class DCGAN(object):
 
     def train(self, config):
         """Train DCGAN"""
-        if config.dataset == 'mnist':
+        #G
+        if config.dataset == 'wav':
+            reader = self.load_wav()
+
+        elif config.dataset == 'mnist':
             data_X, data_y = self.load_mnist()
         else:
             data = glob(os.path.join("./data", config.dataset, "*.jpg"))
@@ -155,16 +167,26 @@ class DCGAN(object):
             print(" [*] Load SUCCESS")
         else:
             print(" [!] Load failed...")
+        if config.dataset == 'wav':
+            num_steps = self.audio_params['num_steps'] 
 
-        for epoch in xrange(config.epoch):
-            if config.dataset == 'mnist':
+        for epoch in range(config.epoch):
+            if config.dataset == 'wav':
+                batch_idxs = num_steps//config.epoch//config.batch_size
+                # G: hack for now. It looks like audio reader doesn't really care about epochs
+                # so eventually we'll just combine epoch and batch_idx loops into num_steps loop
+
+            elif config.dataset == 'mnist':
                 batch_idxs = min(len(data_X), config.train_size) // config.batch_size
             else:            
                 data = glob(os.path.join("./data", config.dataset, "*.jpg"))
                 batch_idxs = min(len(data), config.train_size) // config.batch_size
 
-            for idx in xrange(0, batch_idxs):
-                if config.dataset == 'mnist':
+            for idx in range(0, batch_idxs):
+                #G
+                if config.dataset == 'wav':
+                    pass
+                elif config.dataset == 'mnist':
                     batch_images = data_X[idx*config.batch_size:(idx+1)*config.batch_size]
                     batch_labels = data_y[idx*config.batch_size:(idx+1)*config.batch_size]
                 else:
@@ -177,6 +199,27 @@ class DCGAN(object):
 
                 batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim]) \
                             .astype(np.float32)
+                #G
+                if config.dataset == 'wav':
+                    audio_batch = reader.dequeue(self.batch_size)
+                    # Update D network
+                    _, summary_str = self.sess.run([d_optim, self.d_sum],
+                        feed_dict={ self.images: audio_batch, self.z: batch_z })
+                    self.writer.add_summary(summary_str, counter)
+
+                    # Update G network
+                    _, summary_str = self.sess.run([g_optim, self.g_sum],
+                        feed_dict={ self.z: batch_z })
+                    self.writer.add_summary(summary_str, counter)
+
+                    # Run g_optim twice to make sure that d_loss does not go to zero (different from paper)
+                    _, summary_str = self.sess.run([g_optim, self.g_sum],
+                        feed_dict={ self.z: batch_z })
+                    self.writer.add_summary(summary_str, counter)
+                    
+                    errD_fake = self.d_loss_fake.eval({self.z: batch_z})
+                    errD_real = self.d_loss_real.eval({self.images: audio_batch})
+                    errG = self.g_loss.eval({self.z: batch_z})
 
                 if config.dataset == 'mnist':
                     # Update D network
@@ -233,13 +276,14 @@ class DCGAN(object):
                             [self.sampler, self.d_loss, self.g_loss],
                             feed_dict={self.z: sample_z, self.images: sample_images}
                         )
-                    save_images(samples, [8, 8],
-                                './samples/train_{:02d}_{:04d}.png'.format(epoch, idx))
+                    # G
+                    #save_images(samples, [8, 8],
+                    #            './samples/train_{:02d}_{:04d}.png'.format(epoch, idx))
                     print("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
 
                 if np.mod(counter, 500) == 2:
                     self.save(config.checkpoint_dir, counter)
-
+    #G: Need to modify to 1D
     def discriminator(self, image, y=None, reuse=False):
         if reuse:
             tf.get_variable_scope().reuse_variables()
@@ -269,7 +313,7 @@ class DCGAN(object):
             h3 = linear(h2, 1, 'd_h3_lin')
             
             return tf.nn.sigmoid(h3), h3
-
+    #Need to modify to 1D
     def generator(self, z, y=None):
         if not self.y_dim:
             s = self.output_size
@@ -317,7 +361,7 @@ class DCGAN(object):
             h2 = conv_cond_concat(h2, yb)
 
             return tf.nn.sigmoid(deconv2d(h2, [self.batch_size, s, s, self.c_dim], name='g_h3'))
-
+    #G: Need to modify to 1D
     def sampler(self, z, y=None):
         tf.get_variable_scope().reuse_variables()
 
@@ -362,6 +406,24 @@ class DCGAN(object):
             h2 = conv_cond_concat(h2, yb)
 
             return tf.nn.sigmoid(deconv2d(h2, [self.batch_size, s, s, self.c_dim], name='g_h3'))
+
+    #G
+    def load_wav(self):
+        if self.data_dir:
+            data_dir = self.data_dir
+        else:
+            data_dir = os.path.join("./data", self.dataset_name)
+
+        silence_threshold = self.audio_params['silence_threshold'] if self.audio_params['silence_threshold'] > \
+                                                      EPSILON else None
+        reader = AudioReader(
+            self.data_dir,
+            coord, #!!! @V
+            sample_rate=self.audio_params['sample_rate'],
+            sample_size=self.sample_size,
+            silence_threshold=self.audio_params['silence_threshold'])
+        return reader
+
 
     def load_mnist(self):
         data_dir = os.path.join("./data", self.dataset_name)

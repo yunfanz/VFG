@@ -1,12 +1,11 @@
 import os
 import scipy.misc
 import numpy as np
-
+import audio_reader
 from model import DCGAN
 from utils import pp, visualize, to_json
-
 import tensorflow as tf
-
+import json
 flags = tf.app.flags
 flags.DEFINE_integer("epoch", 25, "Epoch to train [25]")
 flags.DEFINE_float("learning_rate", 0.0002, "Learning rate of for adam [0.0002]")
@@ -17,11 +16,15 @@ flags.DEFINE_integer("image_size", 108, "The size of image to use (will be cente
 flags.DEFINE_integer("output_size", 64, "The size of the output images to produce [64]")
 flags.DEFINE_integer("c_dim", 3, "Dimension of image color. [3]")
 flags.DEFINE_string("dataset", "celebA", "The name of dataset [celebA, mnist, lsun]")
+#G: add data_dir 
+flags.DEFINE_string("data_dir", None, "Optional path to data directory")
 flags.DEFINE_string("checkpoint_dir", "checkpoint", "Directory name to save the checkpoints [checkpoint]")
 flags.DEFINE_string("sample_dir", "samples", "Directory name to save the image samples [samples]")
 flags.DEFINE_boolean("is_train", False, "True for training, False for testing [False]")
 flags.DEFINE_boolean("is_crop", False, "True for training, False for testing [False]")
 flags.DEFINE_boolean("visualize", False, "True for visualizing, False for nothing [False]")
+#G
+flags.DEFINE_float("audio_params", './audio_params.json', 'JSON file with audio-specific parameters.')
 FLAGS = flags.FLAGS
 
 def main(_):
@@ -33,6 +36,15 @@ def main(_):
         os.makedirs(FLAGS.sample_dir)
 
     with tf.Session() as sess:
+        if FLAGS.dataset == 'wav':
+            with open(audio_params, 'r') as f:
+                audio_params = json.load(f)
+            z_dim = audio_params['z_dim']
+            batch_size = audio_params['batch_size']
+            output_size = audio_params['output_size']
+            sample_size = audio_params['sample_size']
+            dcgan = DCGAN(sess, image_size=FLAGS.image_size, batch_size=batch_size, z_dim=z_dim, output_size=output_size, c_dim=1,
+                    dataset_name=FLAGS.dataset, audio_params=FLAGS.audio_params, data_dir=FLAGS.data_dir, is_crop=FLAGS.is_crop, checkpoint_dir=FLAGS.checkpoint_dir)
         if FLAGS.dataset == 'mnist':
             dcgan = DCGAN(sess, image_size=FLAGS.image_size, batch_size=FLAGS.batch_size, y_dim=10, output_size=28, c_dim=1,
                     dataset_name=FLAGS.dataset, is_crop=FLAGS.is_crop, checkpoint_dir=FLAGS.checkpoint_dir)
