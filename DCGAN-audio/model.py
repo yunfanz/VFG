@@ -465,7 +465,7 @@ class DCGAN(object):
             data_dir,
             coord,
             sample_rate=self.audio_params['sample_rate'],
-            sample_size=self.sample_size,
+            sample_size=self.audio_params['sample_length'],
             silence_threshold=self.audio_params['silence_threshold'])
         return reader
 
