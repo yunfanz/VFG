@@ -10,7 +10,10 @@ flags = tf.app.flags
 flags.DEFINE_integer("epoch", 25, "Epoch to train [25]")
 flags.DEFINE_float("learning_rate", 0.0002, "Learning rate of for adam [0.0002]")
 flags.DEFINE_float("beta1", 0.5, "Momentum term of adam [0.5]")
-flags.DEFINE_integer("train_size", np.inf, "The size of train images [np.inf]")
+#G
+#flags.DEFINE_integer("train_size", np.inf, "The size of train images [np.inf]")
+flags.DEFINE_integer("train_size", np.inf, "The number of train images [np.inf]")
+
 flags.DEFINE_integer("batch_size", 64, "The size of batch images [64]")
 flags.DEFINE_integer("image_size", 108, "The size of image to use (will be center cropped) [108]")
 flags.DEFINE_integer("output_size", 64, "The size of the output images to produce [64]")
@@ -36,6 +39,7 @@ def main(_):
         os.makedirs(FLAGS.sample_dir)
 
     with tf.Session() as sess:
+        #G
         if FLAGS.dataset == 'wav':
             with open(audio_params, 'r') as f:
                 audio_params = json.load(f)
