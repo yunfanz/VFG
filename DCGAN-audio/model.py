@@ -382,6 +382,7 @@ class DCGAN(object):
 
             self.h0 = tf.reshape(self.z_, [-1, s16, self.gf_dim * 8])
             h0 = tf.nn.relu(self.g_bn0(self.h0))
+            #import IPython; IPython.embed()
 
             self.h1, self.h1_w, self.h1_b = deconv1d(h0, 
                 [self.batch_size, s8, self.gf_dim*4], name='g_h1', with_w=True)
