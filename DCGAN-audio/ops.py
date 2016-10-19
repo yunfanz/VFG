@@ -128,10 +128,11 @@ def deconv1d(input_, output_shape,
         w = tf.get_variable(name='w', shape=[1, k_w, output_shape[-1], input_.get_shape()[-1]],
                            initializer=tf.random_normal_initializer(stddev=stddev))
         output_shape = output_shape.insert(0,1)
-        print(output_shape)
         input_ = tf.expand_dims(input_, 0)
         deconv = tf.nn.conv2d_transpose(input_, filter=w, output_shape=output_shape, strides=[1, 1, d_w, 1])
         biases = tf.get_variable('biases', [output_shape[-1]], initializer=tf.constant_initializer(0.0))
+
+        deconv = tf.reshape(deconv, output_shape)
         deconv = tf.reshape(tf.nn.bias_add(deconv, biases), deconv.get_shape())
         deconv = tf.squeeze(deconv) #gets rid of all dimensions of size 1
 

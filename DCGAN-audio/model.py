@@ -226,6 +226,7 @@ class DCGAN(object):
                     #G
                     if config.dataset == 'wav':
                         audio_batch = reader.dequeue(self.batch_size) 
+                        audio_batch = encode(audio_batch)
                         #import IPython; IPython.embed()
                         # @F: need to make sure audio_batch is indeed the right format
                         # Update D network
@@ -310,6 +311,7 @@ class DCGAN(object):
 #                            )
                         # G @F I'm passing saving wav files to you
                         if config.dataset == 'wav':
+                            samples = decode(samples)
                             save_audios(samples, './samples/train_{:02d}_{:04d}.wav'.format(epoch, idx), 
                                 format='.wav', sample_rate=audio_params['sample_rate'])
 #                        else:
