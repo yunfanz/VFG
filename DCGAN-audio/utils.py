@@ -14,6 +14,31 @@ pp = pprint.PrettyPrinter()
 
 get_stddev = lambda x, k_h, k_w: 1/math.sqrt(k_w*k_h*x.get_shape()[-1])
 
+# F
+def save_audios(waveform, filename, format='wav', sample_rate = 16000):
+    ''' Save waveform into format specified by format argument.
+    '''
+    if (format == '.wav'):
+        # print 'wav data of shape: ' + waveform.shape
+        # print 'Generating .wav file.'
+        _save_wav(waveform, filename, sample_rate)
+
+def _save_wav(waveform, filename, sample_rate):
+    '''Save the audio into wav file (adapted from tensorflow-wavenet)
+    '''
+    y = np.array(waveform)
+    librosa.output.write_wav(filename, y, sample_rate)
+
+def int16_to_float32(samples):
+    ''' Convert samples from int16 to float32 format'''
+    with tf.name_scope('int16_to_float32'):
+        return tf.cast(samples, tf.float32)
+
+def float32_to_int16(samples):
+    ''' Convert samples from float32 to int16 format '''
+    with tf.name_scope('float32_to_int16'):
+        return tf.cast(samples, tf.int16)
+
 def get_image(image_path, image_size, is_crop=True, resize_w=64, is_grayscale = False):
     return transform(imread(image_path, is_grayscale), image_size, is_crop, resize_w)
 

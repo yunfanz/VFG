@@ -7,7 +7,7 @@ import numpy as np
 #G: bad practice
 #from six.moves import xrange
 import json
-import AudioReader
+from audio_reader import AudioReader
 from ops import *
 from utils import *
 
@@ -309,7 +309,8 @@ class DCGAN(object):
 #                            )
                         # G @F I'm passing saving wav files to you
                         if config.dataset == 'wav':
-                            pass
+                            save_audios(samples, './samples/train_{:02d}_{:04d}.wav'.format(epoch, idx), 
+                                format='.wav', sample_rate=audio_params['sample_rate'])
 #                        else:
 #                            save_images(samples, [8, 8],
 #                                       './samples/train_{:02d}_{:04d}.png'.format(epoch, idx))
