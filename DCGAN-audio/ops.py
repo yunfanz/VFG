@@ -1,5 +1,5 @@
 import math
-import numpy as np 
+import numpy as np
 import tensorflow as tf
 
 from tensorflow.python.framework import ops
@@ -25,12 +25,12 @@ class batch_norm(object):
                                     initializer=tf.constant_initializer(0.))
                 self.gamma = tf.get_variable("gamma", [shape[-1]],
                                     initializer=tf.random_normal_initializer(1., 0.02))
-                
+
                 try:
                     batch_mean, batch_var = tf.nn.moments(x, [0, 1, 2], name='moments')
                 except:
                     batch_mean, batch_var = tf.nn.moments(x, [0, 1], name='moments')
-                    
+
                 ema_apply_op = self.ema.apply([batch_mean, batch_var])
                 self.ema_mean, self.ema_var = self.ema.average(batch_mean), self.ema.average(batch_var)
 
@@ -68,7 +68,7 @@ def conv_cond_concat(x, y):
     y_shapes = y.get_shape()
     return tf.concat(3, [x, y*tf.ones([x_shapes[0], x_shapes[1], x_shapes[2], y_shapes[3]])])
 
-def conv2d(input_, output_dim, 
+def conv2d(input_, output_dim,
            k_h=5, k_w=5, d_h=2, d_w=2, stddev=0.02,
            name="conv2d"):
     with tf.variable_scope(name):
@@ -102,7 +102,7 @@ def deconv2d(input_, output_shape,
         # filter : [height, width, output_channels, in_channels]
         w = tf.get_variable('w', [k_h, k_w, output_shape[-1], input_.get_shape()[-1]],
                             initializer=tf.random_normal_initializer(stddev=stddev))
-        
+
         try:
             deconv = tf.nn.conv2d_transpose(input_, w, output_shape=output_shape,
                                 strides=[1, d_h, d_w, 1])
@@ -119,7 +119,26 @@ def deconv2d(input_, output_shape,
             return deconv, w, biases
         else:
             return deconv
-       
+
+def deconv1d(input_, output_shape,
+             k_w=5, d_w=2, stddev=0.02,
+            name="deconv1d", with_w=False):
+    with tf.variable_scope(name):
+    # filter : [height, width, output_channels, in_channels]
+        w = tf.get_variable('w', [k_w, output_shape[-1], input_.get_shape()[-1]],
+                           initializer=tf.random_normal_initializer(stddev=stddev))
+
+        try:
+            deconv = tf.nn.conv1d(input_, w, output_shape=output_shape,
+                               strides=[1, d_w])
+        biases = tf.get_variable('biases', [output_shape[-1]], initializer=tf.constant_initializer(0.0))
+        deconv = tf.reshape(tf.nn.bias_add(deconv, biases), deconv.get_shape())
+
+        if with_w:
+            return deconv, w, biases
+        else:
+            return deconv
+
 
 def lrelu(x, leak=0.2, name="lrelu"):
   return tf.maximum(x, leak*x)
