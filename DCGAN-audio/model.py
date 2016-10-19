@@ -226,6 +226,7 @@ class DCGAN(object):
                     #G
                     if config.dataset == 'wav':
                         audio_batch = reader.dequeue(self.batch_size) 
+                        #import IPython; IPython.embed()
                         # @F: need to make sure audio_batch is indeed the right format
                         # Update D network
                         _, summary_str = self.sess.run([d_optim, self.d_sum],

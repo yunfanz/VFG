@@ -41,7 +41,7 @@ def main(_):
     with tf.Session() as sess:
         #G
         if FLAGS.dataset == 'wav':
-            with open(audio_params, 'r') as f:
+            with open('audio_params.json', 'r') as f:
                 audio_params = json.load(f)
             z_dim = audio_params['z_dim']
             batch_size = audio_params['batch_size']
