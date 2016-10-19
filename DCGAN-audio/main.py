@@ -27,7 +27,7 @@ flags.DEFINE_boolean("is_train", False, "True for training, False for testing [F
 flags.DEFINE_boolean("is_crop", False, "True for training, False for testing [False]")
 flags.DEFINE_boolean("visualize", False, "True for visualizing, False for nothing [False]")
 #G
-flags.DEFINE_float("audio_params", './audio_params.json', 'JSON file with audio-specific parameters.')
+flags.DEFINE_string("audio_params", './audio_params.json', 'JSON file with audio-specific parameters.')
 FLAGS = flags.FLAGS
 
 def main(_):
@@ -41,7 +41,7 @@ def main(_):
     with tf.Session() as sess:
         #G
         if FLAGS.dataset == 'wav':
-            with open(audio_params, 'r') as f:
+            with open('audio_params.json', 'r') as f:
                 audio_params = json.load(f)
             z_dim = audio_params['z_dim']
             batch_size = audio_params['batch_size']
