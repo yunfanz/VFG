@@ -1,0 +1,6 @@
+./DCGAN-audio/data
+./DCGAN-audio/samples
+*.pyc
+./DCGAN-audio/checkpoint
+./DCGAN-audio/asset
+__pycache__/
