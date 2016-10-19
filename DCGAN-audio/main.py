@@ -49,7 +49,7 @@ def main(_):
             sample_size = audio_params['sample_size']
             dcgan = DCGAN(sess, image_size=FLAGS.image_size, batch_size=batch_size, z_dim=z_dim, output_size=output_size, c_dim=1,
                     dataset_name=FLAGS.dataset, audio_params=FLAGS.audio_params, data_dir=FLAGS.data_dir, is_crop=FLAGS.is_crop, checkpoint_dir=FLAGS.checkpoint_dir)
-        if FLAGS.dataset == 'mnist':
+        elif FLAGS.dataset == 'mnist':
             dcgan = DCGAN(sess, image_size=FLAGS.image_size, batch_size=FLAGS.batch_size, y_dim=10, output_size=28, c_dim=1,
                     dataset_name=FLAGS.dataset, is_crop=FLAGS.is_crop, checkpoint_dir=FLAGS.checkpoint_dir)
         else:
