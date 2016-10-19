@@ -82,9 +82,9 @@ class DCGAN(object):
             self.y= tf.placeholder(tf.float32, [self.batch_size, self.y_dim], name='y')
         #G
         if dataset == 'wav':
-            self.images = tf.placeholder(tf.float32, [self.batch_size] + [self.output_size],
+            self.images = tf.placeholder(tf.float32, [self.batch_size] + [self.output_size, 1],
                                     name='real_images')
-            self.sample_images= tf.placeholder(tf.float32, [self.sample_size] + [self.output_size],
+            self.sample_images= tf.placeholder(tf.float32, [self.sample_size] + [self.output_size, 1],
                                         name='sample_images')
 #        else:
 #            self.images = tf.placeholder(tf.float32, [self.batch_size] + [self.output_size, self.output_size, self.c_dim],
