@@ -127,7 +127,7 @@ def deconv1d(input_, output_shape,
     # filter : [height, width, output_channels, in_channels]
         w = tf.get_variable('w', [k_w, output_shape[-1], input_.get_shape()[-1]],
                            initializer=tf.random_normal_initializer(stddev=stddev))
-        deconv = tf.nn.conv1d(input_, w, output_shape=output_shape, strides=d_w)
+        deconv = tf.nn.conv1d(input_, w, stride=d_w, padding='VALID')
         biases = tf.get_variable('biases', [output_shape[-1]], initializer=tf.constant_initializer(0.0))
         deconv = tf.reshape(tf.nn.bias_add(deconv, biases), deconv.get_shape())
 

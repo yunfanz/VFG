@@ -7,7 +7,7 @@ import numpy as np
 #G: bad practice
 #from six.moves import xrange
 import json
-import AudioReader
+from audio_reader import AudioReader
 from ops import *
 from utils import *
 
