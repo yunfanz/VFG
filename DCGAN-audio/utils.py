@@ -32,12 +32,12 @@ def _save_wav(waveform, filename, sample_rate):
 def int16_to_float32(samples):
     ''' Convert samples from int16 to float32 format'''
     with tf.name_scope('int16_to_float32'):
-        return tf.cast(samples, tf.float32)
+        return tf.cast(samples, tf.float32)*(2/65536)-1
 
 def float32_to_int16(samples):
     ''' Convert samples from float32 to int16 format '''
     with tf.name_scope('float32_to_int16'):
-        return tf.cast(samples, tf.int16)
+        return tf.cast((samples+1)*65536/2, tf.int16)
 
 def get_image(image_path, image_size, is_crop=True, resize_w=64, is_grayscale = False):
     return transform(imread(image_path, is_grayscale), image_size, is_crop, resize_w)
