@@ -10,6 +10,7 @@ import scipy.misc
 import numpy as np
 from time import gmtime, strftime
 import tensorflow as tf
+import librosa
 
 pp = pprint.PrettyPrinter()
 

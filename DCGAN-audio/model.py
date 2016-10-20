@@ -13,7 +13,7 @@ from utils import *
 
 class DCGAN(object):
     def __init__(self, sess, image_size=108, is_crop=True,
-                 batch_size=64, sample_size = 64, output_size=64,
+                 batch_size=64, sample_size = 1, output_size=64,
                  y_dim=None, z_dim=100, gf_dim=64, df_dim=64,
                  gfc_dim=1024, dfc_dim=1024, c_dim=3, dataset_name='default', data_dir=None,
                  audio_params=None, checkpoint_dir=None):
@@ -81,7 +81,6 @@ class DCGAN(object):
         if self.y_dim:
             self.y= tf.placeholder(tf.float32, [self.batch_size, self.y_dim], name='y')
         #G
-        #is there a reason why these placeholders are called real_images/sample-images?
         if dataset == 'wav':
             self.images = tf.placeholder(tf.float32, [self.batch_size] + [self.output_size, 1],
                                     name='real_images')
@@ -141,7 +140,7 @@ class DCGAN(object):
                           .minimize(self.d_loss, var_list=self.d_vars)
         g_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
                           .minimize(self.g_loss, var_list=self.g_vars)
-
+        #import IPython; IPython.embed()
         init = tf.initialize_all_variables()
         self.sess.run(init)
 
@@ -154,9 +153,8 @@ class DCGAN(object):
 
         #G @F Need to check what reader.dequeue actually outputs. 
         if config.dataset == 'wav':
-            sample_images = reader.dequeue(self.sample_size)
-            sample_images = sample_images.eval()
-            
+             sample_images = reader.dequeue(self.sample_size)
+
         counter = 1
         start_time = time.time()
         if self.load(self.checkpoint_dir):
@@ -231,14 +229,14 @@ class DCGAN(object):
                         if config.dataset == 'wav':
                             samples, d_loss, g_loss = self.sess.run(
                                 [self.sampler, self.d_loss, self.g_loss],
-                                feed_dict={self.z: sample_z, self.images: sample_images}
+                                feed_dict={self.z: sample_z, self.images: sample_images.eval()}
                             )
 
                         # G @F I'm passing saving wav files to you
                         if config.dataset == 'wav':
                             samples = decode(samples)
                             save_audios(samples, './samples/train_{:02d}_{:04d}.wav'.format(epoch, idx), 
-                                format='.wav', sample_rate=audio_params['sample_rate'])
+                                format='.wav', sample_rate=self.audio_params['sample_rate'])
                         print("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
 
                     if np.mod(counter, 500) == 2:
