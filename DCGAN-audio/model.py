@@ -112,7 +112,8 @@ class DCGAN(object):
 
         self.d_sum = tf.histogram_summary("d", self.D)
         self.d__sum = tf.histogram_summary("d_", self.D_)
-        self.G_sum = tf.image_summary("G", self.G)
+        #G need to check sample rate
+        self.G_sum = tf.audio_summary("G", self.G, sample_rate=self.audio_params['sample_rate'])
 
         self.d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(self.D_logits, tf.ones_like(self.D)))
         self.d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(self.D_logits_, tf.zeros_like(self.D_)))
@@ -227,9 +228,8 @@ class DCGAN(object):
                     #G
                     if config.dataset == 'wav':
                         audio_batch = reader.dequeue(self.batch_size) 
-                        audio_batch = encode(audio_batch)
-                        import IPython; IPython.embed()
-                        # @F: need to make sure audio_batch is indeed the right format
+                        audio_batch = audio_batch.eval()
+                        #audio_batch = encode(audio_batch.eval())
                         # Update D network
                         _, summary_str = self.sess.run([d_optim, self.d_sum],
                             feed_dict={ self.images: audio_batch, self.z: batch_z })
@@ -385,7 +385,6 @@ class DCGAN(object):
 
             self.h0 = tf.reshape(self.z_, [-1, s16, self.gf_dim * 8])
             h0 = tf.nn.relu(self.g_bn0(self.h0))
-            #import IPython; IPython.embed()
 
             self.h1, self.h1_w, self.h1_b = deconv1d(h0, 
                 [self.batch_size, s8, self.gf_dim*4], name='g_h1', with_w=True)
@@ -497,7 +496,6 @@ class DCGAN(object):
         EPSILON = 0.001
         silence_threshold = self.audio_params['silence_threshold'] if self.audio_params['silence_threshold'] > \
                                                       EPSILON else None
-        #import IPython; IPython.embed()
         reader = AudioReader(
             data_dir,
             coord,

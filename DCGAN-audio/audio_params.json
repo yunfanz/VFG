@@ -4,7 +4,7 @@
     "z_dim": 16000,
     "output_size": 1024,
     "sample_size": 1,
-    "sample_length": 100000, 
+    "sample_length": 1024, 
     "batch_size": 1,
     "num_steps":1000
 }
