@@ -3,4 +3,4 @@
 *.pyc
 ./DCGAN-audio/checkpoint
 ./DCGAN-audio/asset
-__pycache__/
+./DCGAN-audio/__pycache__

@@ -89,7 +89,6 @@ class AudioReader(object):
         return output
 
     def thread_main(self, sess):
-        
         buffer_ = np.array([])
         stop = False
         # Go through the dataset multiple times

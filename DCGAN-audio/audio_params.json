@@ -1,11 +1,11 @@
 {
-	"epoch": 25,
+	"epoch": 1,
 	"learning_rate": 0.0002,
 	"beta1": 0.5,
     "sample_rate": 16000,
     "silence_threshold": 0.3,
     "z_dim": 100,
-    "num_per_epoch":1000,
+    "num_per_epoch":5000,
     "gf_dim": 64, 
     "df_dim": 64,
     "gfc_dim": 1024,
