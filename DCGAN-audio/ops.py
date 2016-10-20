@@ -96,8 +96,8 @@ def deconv1d(input_, output_shape,
         biases = tf.get_variable('biases', [output_shape[-1]], initializer=tf.constant_initializer(0.0))
 
         deconv = tf.reshape(deconv, output_shape)
-        deconv = tf.reshape(tf.nn.bias_add(deconv, biases), deconv.get_shape())
         deconv = tf.squeeze(deconv, [0]) #removes the first dummy dimension
+        deconv = tf.reshape(tf.nn.bias_add(deconv, biases), deconv.get_shape())
 
         if with_w:
             return deconv, w, biases
