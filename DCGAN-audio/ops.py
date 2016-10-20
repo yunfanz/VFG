@@ -87,6 +87,7 @@ def conv1d(input_, output_dim,
     with tf.variable_scope(name):
         w = tf.get_variable('w', [k_w, input_.get_shape()[-1], output_dim],
                             initializer=tf.truncated_normal_initializer(stddev=stddev))
+        #import IPython; IPython.embed()
         conv = tf.nn.conv1d(input_, w, stride=d_w, padding='SAME')
 
         biases = tf.get_variable('biases', [output_dim], initializer=tf.constant_initializer(0.0))
@@ -147,9 +148,10 @@ def lrelu(x, leak=0.2, name="lrelu"):
 
 def linear(input_, output_size, scope=None, stddev=0.02, bias_start=0.0, with_w=False):
     shape = input_.get_shape().as_list()
+    #import IPython; IPython.embed()
 
     with tf.variable_scope(scope or "Linear"):
-        matrix = tf.get_variable("Matrix", [shape[1], output_size], tf.float32,
+        matrix = tf.get_variable("Matrix", [shape[-1], output_size], tf.float32,
                                  tf.random_normal_initializer(stddev=stddev))
         bias = tf.get_variable("bias", [output_size],
             initializer=tf.constant_initializer(bias_start))

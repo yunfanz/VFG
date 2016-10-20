@@ -145,18 +145,19 @@ class DCGAN(object):
 #        else:
 #            data = glob(os.path.join("./data", config.dataset, "*.jpg"))
         #np.random.shuffle(data)
-
         d_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
                           .minimize(self.d_loss, var_list=self.d_vars)
         g_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
                           .minimize(self.g_loss, var_list=self.g_vars)
-        tf.initialize_all_variables().run()
+        #tf.initialize_all_variables().run()
+        init = tf.initialize_all_variables()
+        self.sess.run(init)
+
 
         self.g_sum = tf.merge_summary([self.z_sum, self.d__sum, 
             self.G_sum, self.d_loss_fake_sum, self.g_loss_sum])
         self.d_sum = tf.merge_summary([self.z_sum, self.d_sum, self.d_loss_real_sum, self.d_loss_sum])
         self.writer = tf.train.SummaryWriter("./logs", self.sess.graph)
-
         sample_z = np.random.uniform(-1, 1, size=(self.sample_size , self.z_dim))
 
         #G @F Need to check what reader.dequeue actually outputs. 
@@ -176,7 +177,6 @@ class DCGAN(object):
             
         counter = 1
         start_time = time.time()
-
         if self.load(self.checkpoint_dir):
             print(" [*] Load SUCCESS")
         else:
@@ -199,6 +199,7 @@ class DCGAN(object):
                     or modify audio_reader to have epoch, both are simple to do. 
                     num_steps is wavenet terminology for config.train_size here. 
                     '''
+
 
                 elif config.dataset == 'mnist':
                     batch_idxs = min(len(data_X), config.train_size) // config.batch_size
@@ -227,7 +228,7 @@ class DCGAN(object):
                     if config.dataset == 'wav':
                         audio_batch = reader.dequeue(self.batch_size) 
                         audio_batch = encode(audio_batch)
-                        #import IPython; IPython.embed()
+                        import IPython; IPython.embed()
                         # @F: need to make sure audio_batch is indeed the right format
                         # Update D network
                         _, summary_str = self.sess.run([d_optim, self.d_sum],
@@ -496,6 +497,7 @@ class DCGAN(object):
         EPSILON = 0.001
         silence_threshold = self.audio_params['silence_threshold'] if self.audio_params['silence_threshold'] > \
                                                       EPSILON else None
+        #import IPython; IPython.embed()
         reader = AudioReader(
             data_dir,
             coord,

@@ -14,10 +14,10 @@ flags.DEFINE_float("beta1", 0.5, "Momentum term of adam [0.5]")
 #flags.DEFINE_integer("train_size", np.inf, "The size of train images [np.inf]")
 flags.DEFINE_integer("train_size", np.inf, "The number of train images [np.inf]")
 
-flags.DEFINE_integer("batch_size", 64, "The size of batch images [64]")
+flags.DEFINE_integer("batch_size", 1, "The size of batch images [64]")
 flags.DEFINE_integer("image_size", 108, "The size of image to use (will be center cropped) [108]")
-flags.DEFINE_integer("output_size", 64, "The size of the output images to produce [64]")
-flags.DEFINE_integer("c_dim", 3, "Dimension of image color. [3]")
+flags.DEFINE_integer("output_size", 1024, "The size of the output images to produce [64]")
+flags.DEFINE_integer("c_dim", 1, "Dimension of image color. [3]")
 flags.DEFINE_string("dataset", "celebA", "The name of dataset [celebA, mnist, lsun]")
 #G: add data_dir 
 flags.DEFINE_string("data_dir", None, "Optional path to data directory")
@@ -38,7 +38,7 @@ def main(_):
     if not os.path.exists(FLAGS.sample_dir):
         os.makedirs(FLAGS.sample_dir)
 
-    with tf.Session() as sess:
+    with tf.Session(config=tf.ConfigProto(log_device_placement=False)) as sess:
         #G
         if FLAGS.dataset == 'wav':
             with open('audio_params.json', 'r') as f:
@@ -49,7 +49,7 @@ def main(_):
             sample_size = audio_params['sample_size']
             dcgan = DCGAN(sess, image_size=FLAGS.image_size, batch_size=batch_size, z_dim=z_dim, output_size=output_size, c_dim=1,
                     dataset_name=FLAGS.dataset, audio_params=FLAGS.audio_params, data_dir=FLAGS.data_dir, is_crop=FLAGS.is_crop, checkpoint_dir=FLAGS.checkpoint_dir)
-        if FLAGS.dataset == 'mnist':
+        elif FLAGS.dataset == 'mnist':
             dcgan = DCGAN(sess, image_size=FLAGS.image_size, batch_size=FLAGS.batch_size, y_dim=10, output_size=28, c_dim=1,
                     dataset_name=FLAGS.dataset, is_crop=FLAGS.is_crop, checkpoint_dir=FLAGS.checkpoint_dir)
         else:

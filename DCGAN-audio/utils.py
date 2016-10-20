@@ -9,6 +9,7 @@ import pprint
 import scipy.misc
 import numpy as np
 from time import gmtime, strftime
+import tensorflow as tf
 
 pp = pprint.PrettyPrinter()
 
