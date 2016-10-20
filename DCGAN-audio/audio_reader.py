@@ -76,6 +76,7 @@ class AudioReader(object):
         self.coord = coord
         self.sample_size = sample_size
         self.silence_threshold = silence_threshold
+        self.corpus_size = get_corpus_size(self.audio_dir)
         self.threads = []
         self.sample_placeholder = tf.placeholder(dtype=tf.float32, shape=None)
         self.queue = tf.PaddingFIFOQueue(queue_size,
@@ -88,7 +89,7 @@ class AudioReader(object):
         return output
 
     def thread_main(self, sess):
-        self.corpus_size = get_corpus_size(self.audio_dir)
+        
         buffer_ = np.array([])
         stop = False
         # Go through the dataset multiple times

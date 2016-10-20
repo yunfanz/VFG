@@ -17,9 +17,11 @@ pp = pprint.PrettyPrinter()
 #get_stddev = lambda x, k_h, k_w: 1/math.sqrt(k_w*k_h*x.get_shape()[-1])
 
 #G
-def save_waveform(waveform, filename, format='png'):
+def save_waveform(waveform, filename, title=None):
     f, ax = plt.subplots(1)
     ax.plot(waveform)
+    if title:
+      ax.set_title(title)
     plt.savefig(filename)
 # F
 def save_audios(waveform, filename, format='wav', sample_rate = 16000):

@@ -16,7 +16,7 @@ flags.DEFINE_integer("sample_size", 1, "The size of sample batch waveforms [1]")
 flags.DEFINE_integer("batch_size", 1, "The size of input batch waveforms [1]")
 flags.DEFINE_integer("image_size", 108, "The size of image to use (will be center cropped) [108]")
 flags.DEFINE_integer("output_length", 1024, "The length of the output waveform to produce ")
-flags.DEFINE_integer("sample_length", 1024, "The length of the input waveforms; has to match output_length if is_train")
+flags.DEFINE_integer("sample_length", 16384, "The length of the input waveforms; has to match output_length if is_train")
 flags.DEFINE_integer("c_dim", 1, "Dimension of image color. [1]")
 flags.DEFINE_integer("z_dim", 100, "length of latent code. [100]")
 flags.DEFINE_string("dataset", "wav", "The name of dataset ['wav']")
@@ -46,6 +46,12 @@ def main(_):
             FLAGS.learning_rate = audio_params['learning_rate']
             FLAGS.beta1 = audio_params['beta1']
             FLAGS.z_dim = audio_params['z_dim']
+            if FLAGS.is_train:
+                if FLAGS.sample_length != FLAGS.output_length:
+                    #G: may not need sample_length at all
+                    warnings.warn('Training sample_length must be equal to output_length')
+                    print('Setting sample_length to output_length', FLAGS.output_length)
+                    FLAGS.sample_length = FLAGS.output_length
             dcgan = DCGAN(sess, image_size=FLAGS.image_size, sample_size=FLAGS.sample_size, batch_size=FLAGS.batch_size, z_dim=FLAGS.z_dim, 
                     output_length=FLAGS.output_length, sample_length=FLAGS.sample_length, c_dim=1,
                     dataset_name=FLAGS.dataset, audio_params=FLAGS.audio_params, data_dir=FLAGS.data_dir, is_crop=FLAGS.is_crop, checkpoint_dir=FLAGS.checkpoint_dir)
@@ -53,11 +59,6 @@ def main(_):
             raise Exception('dataset not understood')
 
         if FLAGS.is_train:
-            if FLAGS.sample_length != FLAGS.output_length:
-                #G: may not need sample_length at all
-                warnings.warn('Training sample_length must be equal to output_length')
-                print('Setting sample_length to output_length', FLAGS.output_length)
-                FLAGS.sample_length = FLAGS.output_length
             dcgan.train(FLAGS)
         else:
             dcgan.load(FLAGS.checkpoint_dir)
