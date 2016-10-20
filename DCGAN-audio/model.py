@@ -155,6 +155,7 @@ class DCGAN(object):
         #G @F Need to check what reader.dequeue actually outputs. 
         if config.dataset == 'wav':
             sample_images = reader.dequeue(self.sample_size)
+            sample_images = sample_images.eval()
             
         counter = 1
         start_time = time.time()
