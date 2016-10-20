@@ -1,8 +1,8 @@
 {
-    "sample_rate": 160000,
+    "sample_rate": 16000,
     "silence_threshold": 0.3,
-    "z_dim": 160000,
-    "output_size": 100000,
+    "z_dim": 16000,
+    "output_size": 1024,
     "sample_size": 1,
     "sample_length": 100000, 
     "batch_size": 1,
