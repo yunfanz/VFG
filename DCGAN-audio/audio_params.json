@@ -1,10 +1,13 @@
 {
+	"epoch": 25,
+	"learning_rate": 0.0002,
+	"beta1": 0.5,
     "sample_rate": 16000,
     "silence_threshold": 0.3,
-    "z_dim": 16000,
-    "output_size": 1024,
-    "sample_size": 1,
-    "sample_length": 1024, 
-    "batch_size": 1,
-    "num_steps":1000
+    "z_dim": 100,
+    "num_steps":1000,
+    "gf_dim": 64, 
+    "df_dim": 64,
+    "gfc_dim": 1024,
+    "dfc_dim": 1024
 }

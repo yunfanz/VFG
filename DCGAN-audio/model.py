@@ -13,16 +13,16 @@ from utils import *
 
 class DCGAN(object):
     def __init__(self, sess, image_size=108, is_crop=True,
-                 batch_size=64, sample_size = 1, output_size=64,
+                 batch_size=1, sample_size = 1, output_length=1024, sample_length=1024,
                  y_dim=None, z_dim=100, gf_dim=64, df_dim=64,
-                 gfc_dim=1024, dfc_dim=1024, c_dim=3, dataset_name='default', data_dir=None,
+                 gfc_dim=1024, dfc_dim=1024, c_dim=1, dataset_name='default', data_dir=None,
                  audio_params=None, checkpoint_dir=None):
         """
 
         Args:
             sess: TensorFlow session
             batch_size: The size of batch. Should be specified before training.
-            output_size: (optional) The resolution in pixels of the images. [64]
+            output_length: (optional) The resolution in pixels of the images. [64]
             y_dim: (optional) Dimension of dim for y. [None]
             z_dim: (optional) Dimension of dim for Z. [100]
             gf_dim: (optional) Dimension of gen filters in first conv layer. [64]
@@ -37,8 +37,8 @@ class DCGAN(object):
         self.batch_size = batch_size
         self.image_size = image_size
         self.sample_size = sample_size
-        self.output_size = output_size
-
+        self.output_length = output_length
+        self.sample_length = sample_length
         self.y_dim = y_dim
         self.z_dim = z_dim
 
@@ -82,9 +82,9 @@ class DCGAN(object):
             self.y= tf.placeholder(tf.float32, [self.batch_size, self.y_dim], name='y')
         #G
         if dataset == 'wav':
-            self.images = tf.placeholder(tf.float32, [self.batch_size] + [self.output_size, 1],
+            self.images = tf.placeholder(tf.float32, [self.batch_size] + [self.output_length, 1],
                                     name='real_images')
-            self.sample_images= tf.placeholder(tf.float32, [self.sample_size] + [self.output_size, 1],
+            self.sample_images= tf.placeholder(tf.float32, [self.sample_size] + [self.output_length, 1],
                                         name='sample_images')
         self.z = tf.placeholder(tf.float32, [None, self.z_dim],
                                 name='z')
@@ -273,7 +273,7 @@ class DCGAN(object):
     #@V @F Need to modify to 1D 
     def generator(self, z, y=None):
         if not self.y_dim:
-            s = self.output_size
+            s = self.output_length
             s2, s4, s8, s16 = int(s/2), int(s/4), int(s/8), int(s/16)
 
             # project `z` and reshape
@@ -305,7 +305,7 @@ class DCGAN(object):
 
         if not self.y_dim:
             
-            s = self.output_size
+            s = self.output_length
             s2, s4, s8, s16 = int(s/2), int(s/4), int(s/8), int(s/16)
 
             h0 = tf.reshape(linear(z, self.gf_dim*8*s16, 'g_h0_lin'),
@@ -338,14 +338,14 @@ class DCGAN(object):
             data_dir,
             coord,
             sample_rate=self.audio_params['sample_rate'],
-            sample_size=self.audio_params['sample_length'],
+            sample_size=self.sample_length,
             silence_threshold=silence_threshold)
         return reader
 
 
     def save(self, checkpoint_dir, step):
         model_name = "DCGAN.model"
-        model_dir = "%s_%s_%s" % (self.dataset_name, self.batch_size, self.output_size)
+        model_dir = "%s_%s_%s" % (self.dataset_name, self.batch_size, self.output_length)
         checkpoint_dir = os.path.join(checkpoint_dir, model_dir)
 
         if not os.path.exists(checkpoint_dir):
@@ -359,7 +359,7 @@ class DCGAN(object):
     def load(self, checkpoint_dir):
         print(" [*] Reading checkpoints...")
 
-        model_dir = "%s_%s_%s" % (self.dataset_name, self.batch_size, self.output_size)
+        model_dir = "%s_%s_%s" % (self.dataset_name, self.batch_size, self.output_length)
         checkpoint_dir = os.path.join(checkpoint_dir, model_dir)
 
         ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
