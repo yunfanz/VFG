@@ -42,12 +42,6 @@ class DCGAN(object):
         self.y_dim = y_dim
         self.z_dim = z_dim
 
-        self.gf_dim = gf_dim
-        self.df_dim = df_dim
-
-        self.gfc_dim = gfc_dim
-        self.dfc_dim = dfc_dim
-
         self.c_dim = c_dim
 
         # batch normalization : deals with poor initialization helps gradient flow
@@ -70,6 +64,15 @@ class DCGAN(object):
         if audio_params:
             with open(audio_params, 'r') as f:
                 self.audio_params = json.load(f)
+            self.gf_dim = self.audio_params['gf_dim']
+            self.df_dim = self.audio_params['df_dim']
+            self.gfc_dim = self.audio_params['gfc_dim']
+            self.dfc_dim = self.audio_params['dfc_dim']
+        else:
+            self.gf_dim = gf_dim
+            self.df_dim = df_dim
+            self.gfc_dim = gfc_dim
+            self.dfc_dim = dfc_dim
 
 
         self.checkpoint_dir = checkpoint_dir
@@ -166,26 +169,13 @@ class DCGAN(object):
         if config.dataset == 'wav':
             threads = tf.train.start_queue_runners(sess=self.sess, coord=coord)
             reader.start_threads(self.sess)
-            num_steps = self.audio_params['num_steps'] 
+            num_per_epoch = self.audio_params['num_per_epoch'] 
         #G
         try:
             for epoch in range(config.epoch):
                 if config.dataset == 'wav':
-                    batch_idxs = num_steps//config.epoch//config.batch_size
-                    '''
-                    # G: hack for now. It looks like audio reader doesn't really care about epochs
-                    The iterator in wavenet just follows the total "num_steps"
-                    we can either combine epoch and batch_idx loops into num_steps loop
-                    or modify audio_reader to have epoch, both are simple to do. 
-                    num_steps is wavenet terminology for config.train_size here. 
-                    '''
-
-
-                elif config.dataset == 'mnist':
-                    batch_idxs = min(len(data_X), config.train_size) // config.batch_size
-                else:            
-                    data = glob(os.path.join("./data", config.dataset, "*.jpg"))
-                    batch_idxs = min(len(data), config.train_size) // config.batch_size
+                    #import IPython; IPython.embed()
+                    batch_idxs = min(num_per_epoch, reader.corpus_size) // config.batch_size
 
                 for idx in range(0, batch_idxs):
                     #G

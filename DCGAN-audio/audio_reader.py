@@ -10,6 +10,14 @@ import librosa
 import numpy as np
 import tensorflow as tf
 
+#G
+def get_corpus_size(directory, pattern='*.wav'):
+    '''Recursively finds all files matching the pattern.'''
+    files = []
+    for root, dirnames, filenames in os.walk(directory):
+        for filename in fnmatch.filter(filenames, pattern):
+            files.append(os.path.join(root, filename))
+    return len(files)
 
 def find_files(directory, pattern='*.wav'):
     '''Recursively finds all files matching the pattern.'''
@@ -80,6 +88,7 @@ class AudioReader(object):
         return output
 
     def thread_main(self, sess):
+        self.corpus_size = get_corpus_size(self.audio_dir)
         buffer_ = np.array([])
         stop = False
         # Go through the dataset multiple times

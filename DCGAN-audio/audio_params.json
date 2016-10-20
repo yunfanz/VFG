@@ -5,7 +5,7 @@
     "sample_rate": 16000,
     "silence_threshold": 0.3,
     "z_dim": 100,
-    "num_steps":1000,
+    "num_per_epoch":1000,
     "gf_dim": 64, 
     "df_dim": 64,
     "gfc_dim": 1024,

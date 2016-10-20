@@ -49,12 +49,8 @@ def main(_):
             dcgan = DCGAN(sess, image_size=FLAGS.image_size, sample_size=FLAGS.sample_size, batch_size=FLAGS.batch_size, z_dim=FLAGS.z_dim, 
                     output_length=FLAGS.output_length, sample_length=FLAGS.sample_length, c_dim=1,
                     dataset_name=FLAGS.dataset, audio_params=FLAGS.audio_params, data_dir=FLAGS.data_dir, is_crop=FLAGS.is_crop, checkpoint_dir=FLAGS.checkpoint_dir)
-        elif FLAGS.dataset == 'mnist':
-            dcgan = DCGAN(sess, image_size=FLAGS.image_size, batch_size=FLAGS.batch_size, y_dim=10, output_length=28, c_dim=1,
-                    dataset_name=FLAGS.dataset, is_crop=FLAGS.is_crop, checkpoint_dir=FLAGS.checkpoint_dir)
         else:
-            dcgan = DCGAN(sess, image_size=FLAGS.image_size, batch_size=FLAGS.batch_size, output_length=FLAGS.output_length, c_dim=FLAGS.c_dim,
-                    dataset_name=FLAGS.dataset, is_crop=FLAGS.is_crop, checkpoint_dir=FLAGS.checkpoint_dir)
+            raise Exception('dataset not understood')
 
         if FLAGS.is_train:
             if FLAGS.sample_length != FLAGS.output_length:
