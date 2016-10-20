@@ -11,11 +11,16 @@ import numpy as np
 from time import gmtime, strftime
 import tensorflow as tf
 import librosa
-
+import matplotlib.pyplot as plt
 pp = pprint.PrettyPrinter()
+#G
+#get_stddev = lambda x, k_h, k_w: 1/math.sqrt(k_w*k_h*x.get_shape()[-1])
 
-get_stddev = lambda x, k_h, k_w: 1/math.sqrt(k_w*k_h*x.get_shape()[-1])
-
+#G
+def save_waveform(waveform, filename, format='png'):
+    f, ax = plt.subplots(1)
+    ax.plot(waveform)
+    plt.savefig(filename)
 # F
 def save_audios(waveform, filename, format='wav', sample_rate = 16000):
     ''' Save waveform into format specified by format argument.

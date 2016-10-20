@@ -234,8 +234,10 @@ class DCGAN(object):
 
                         # G @F I'm passing saving wav files to you
                         if config.dataset == 'wav':
-                            samples = decode(samples)
-                            save_audios(samples, './samples/train_{:02d}_{:04d}.wav'.format(epoch, idx), 
+                            #import IPython; IPython.embed()
+                            #samples = decode(samples)
+                            save_waveform(samples[0],'./samples/train_{:02d}_{:04d}'.format(epoch, idx), format='png')
+                            save_audios(samples[0], './samples/train_{:02d}_{:04d}.wav'.format(epoch, idx), 
                                 format='.wav', sample_rate=self.audio_params['sample_rate'])
                         print("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
 
