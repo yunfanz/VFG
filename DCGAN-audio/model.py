@@ -188,7 +188,7 @@ class DCGAN(object):
                     if config.dataset == 'wav':
                         audio_batch = reader.dequeue(self.batch_size) 
                         audio_batch = audio_batch.eval()
-
+                        #import IPython; IPython.embed()
                         # Update D network
                         _, summary_str = self.sess.run([d_optim, self.d_sum],
                             feed_dict={ self.images: audio_batch, self.z: batch_z })
@@ -200,9 +200,9 @@ class DCGAN(object):
                         self.writer.add_summary(summary_str, counter)
 
                         # Run g_optim twice to make sure that d_loss does not go to zero (different from paper)
-                        _, summary_str = self.sess.run([g_optim, self.g_sum],
-                            feed_dict={ self.z: batch_z })
-                        self.writer.add_summary(summary_str, counter)
+                        # _, summary_str = self.sess.run([g_optim, self.g_sum],
+                        #     feed_dict={ self.z: batch_z })
+                        # self.writer.add_summary(summary_str, counter)
                         
                         errD_fake = self.d_loss_fake.eval({self.z: batch_z})
                         errD_real = self.d_loss_real.eval({self.images: audio_batch})
@@ -214,7 +214,7 @@ class DCGAN(object):
                         % (epoch, idx, batch_idxs,
                             time.time() - start_time, errD_fake+errD_real, errG))
 
-                    if np.mod(counter, 100) == 1:
+                    if np.mod(counter, config.save_every) == 1:
                         #G
                         if config.dataset == 'wav':
                             samples, d_loss, g_loss = self.sess.run(
@@ -226,13 +226,14 @@ class DCGAN(object):
                         if config.dataset == 'wav':
                             #import IPython; IPython.embed()
                             #samples = decode(samples)
-                            im_title = "[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss)
-                            save_waveform(samples[0],'./samples/train_{:02d}_{:04d}'.format(epoch, idx), title=im_title)
-                            im_sum = get_im_summary(samples[0], title=im_title)
+                            im_title = "d_loss: %.5f, g_loss: %.5f" % (d_loss, g_loss)
+                            file_str = '{:02d}_{:04d}'.format(epoch, idx)
+                            save_waveform(samples[0],file_str, title=im_title)
+                            im_sum = get_im_summary(samples[0], title=file_str+im_title)
                             summary_str = self.sess.run(im_sum)
                             self.writer.add_summary(summary_str, counter)
                             
-                            save_audios(samples[0], './samples/train_{:02d}_{:04d}.wav'.format(epoch, idx), 
+                            save_audios(samples[0], './samples/train_'+file_str+'.wav', 
                                 format='.wav', sample_rate=self.audio_params['sample_rate'])
                         print("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
 
