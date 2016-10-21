@@ -226,7 +226,12 @@ class DCGAN(object):
                         if config.dataset == 'wav':
                             #import IPython; IPython.embed()
                             #samples = decode(samples)
-                            save_waveform(samples[0],'./samples/train_{:02d}_{:04d}'.format(epoch, idx), title="[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
+                            im_title = "[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss)
+                            save_waveform(samples[0],'./samples/train_{:02d}_{:04d}'.format(epoch, idx), title=im_title)
+                            im_sum = get_im_summary(samples[0], title=im_title)
+                            summary_str = self.sess.run(im_sum)
+                            self.writer.add_summary(summary_str, counter)
+                            
                             save_audios(samples[0], './samples/train_{:02d}_{:04d}.wav'.format(epoch, idx), 
                                 format='.wav', sample_rate=self.audio_params['sample_rate'])
                         print("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
