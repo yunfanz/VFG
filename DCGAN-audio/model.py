@@ -228,7 +228,7 @@ class DCGAN(object):
                             #samples = decode(samples)
                             im_title = "d_loss: %.5f, g_loss: %.5f" % (d_loss, g_loss)
                             file_str = '{:02d}_{:04d}'.format(epoch, idx)
-                            save_waveform(samples[0],file_str, title=im_title)
+                            save_waveform(samples[0],'./samples/train_'file_str, title=im_title)
                             im_sum = get_im_summary(samples[0], title=file_str+im_title)
                             summary_str = self.sess.run(im_sum)
                             self.writer.add_summary(summary_str, counter)
