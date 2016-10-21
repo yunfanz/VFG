@@ -2,12 +2,12 @@
 	"epoch": 1,
 	"learning_rate": 0.0001,
 	"beta1": 0.5,
-    "sample_rate": 1600,
+    "sample_rate": 3200,
     "silence_threshold": 0.3,
     "z_dim": 200,
-    "num_per_epoch":5000,
+    "num_per_epoch":10000,
     "gf_dim": 64, 
-    "df_dim": 128,
+    "df_dim": 64,
     "gfc_dim": 1024,
     "dfc_dim": 1024
 }
