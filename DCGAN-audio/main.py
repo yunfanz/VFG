@@ -25,7 +25,7 @@ flags.DEFINE_string("data_dir", None, "Optional path to data directory")
 flags.DEFINE_string("checkpoint_dir", "checkpoint", "Directory name to save the checkpoints [checkpoint]")
 flags.DEFINE_string("sample_dir", "samples", "Directory name to save the image samples [samples]")
 flags.DEFINE_boolean("is_train", False, "True for training, False for testing [False]")
-flags.DEFINE_boolean("is_crop", False, "True for training, False for testing [False]")
+#flags.DEFINE_boolean("is_crop", False, "True for training, False for testing [False]")
 flags.DEFINE_boolean("use_disc", False, "Whether to use mini-batch discrimination on the discriminator")
 flags.DEFINE_boolean("visualize", False, "True for visualizing, False for nothing [False]")
 flags.DEFINE_string("audio_params", './audio_params.json', 'JSON file with tune-specific parameters.')
@@ -56,7 +56,7 @@ def main(_):
                     FLAGS.sample_length = FLAGS.output_length
             dcgan = DCGAN(sess, image_size=FLAGS.image_size, sample_size=FLAGS.sample_size, batch_size=FLAGS.batch_size, z_dim=FLAGS.z_dim, 
                     output_length=FLAGS.output_length, sample_length=FLAGS.sample_length, c_dim=1,
-                    dataset_name=FLAGS.dataset, audio_params=FLAGS.audio_params, data_dir=FLAGS.data_dir, is_crop=FLAGS.is_crop, use_disc=FLAGS.use_disc, checkpoint_dir=FLAGS.checkpoint_dir)
+                    dataset_name=FLAGS.dataset, audio_params=FLAGS.audio_params, data_dir=FLAGS.data_dir, use_disc=FLAGS.use_disc, checkpoint_dir=FLAGS.checkpoint_dir)
         else:
             raise Exception('dataset not understood')
 
