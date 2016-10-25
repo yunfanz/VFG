@@ -16,7 +16,7 @@ class DCGAN(object):
                  batch_size=1, sample_size = 1, output_length=1024, sample_length=1024,
                  y_dim=None, z_dim=100, gf_dim=64, df_dim=64,
                  gfc_dim=1024, dfc_dim=1024, c_dim=1, dataset_name='default', data_dir=None,
-                 audio_params=None, checkpoint_dir=None):
+                 audio_params=None, checkpoint_dir=None, use_disc=False):
         """
 
         Args:
@@ -78,9 +78,10 @@ class DCGAN(object):
         self.checkpoint_dir = checkpoint_dir
         #G
         #self.build_model()
+        self.use_disc = use_disc
         self.build_model(self.dataset_name)
 
-    def build_model(self, dataset):
+    def build_model(self, dataset, use_disc):
         if self.y_dim:
             self.y= tf.placeholder(tf.float32, [self.batch_size, self.y_dim], name='y')
         #G
@@ -94,18 +95,19 @@ class DCGAN(object):
 
         self.z_sum = tf.histogram_summary("z", self.z)
 
+        #G deprecated, this only applies for mnist
         if self.y_dim:
             self.G = self.generator(self.z, self.y)
-            self.D, self.D_logits = self.discriminator(self.images, self.y, reuse=False)
+            self.D, self.D_logits = self.discriminator(self.images, self.y, use_disc=self.use_disc, reuse=False)
 
             self.sampler = self.sampler(self.z, self.y)
-            self.D_, self.D_logits = self.discriminator(self.G, self.y, reuse=True)
+            self.D_, self.D_logits = self.discriminator(self.G, self.y, use_disc=self.use_disc, reuse=True)
         else:
             self.G = self.generator(self.z)
-            self.D, self.D_logits = self.discriminator(self.images)
+            self.D, self.D_logits = self.discriminator(self.images, use_disc=self.use_disc)
 
             self.sampler = self.sampler(self.z)
-            self.D_, self.D_logits_ = self.discriminator(self.G, reuse=True)
+            self.D_, self.D_logits_ = self.discriminator(self.G, use_disc=self.use_disc, reuse=True)
         
 
         self.d_sum = tf.histogram_summary("d", self.D)
@@ -116,11 +118,16 @@ class DCGAN(object):
         self.d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(self.D_logits, tf.ones_like(self.D)))
         self.d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(self.D_logits_, tf.zeros_like(self.D_)))
         self.g_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(self.D_logits_, tf.ones_like(self.D_)))
+        self.d_loss = self.d_loss_real + self.d_loss_fake
+
+        #G experiments with losses
+        #self.max_like_g_loss = tf.reduce_mean(-tf.exp(self.D_logits_)/2.)
+        #self.g_loss = self.max_like_g_loss
+        #import IPython; IPython.embed()
+        #self.g_loss = self.g_loss - self.d_loss
 
         self.d_loss_real_sum = tf.scalar_summary("d_loss_real", self.d_loss_real)
         self.d_loss_fake_sum = tf.scalar_summary("d_loss_fake", self.d_loss_fake)
-                                                    
-        self.d_loss = self.d_loss_real + self.d_loss_fake
 
         self.g_loss_sum = tf.scalar_summary("g_loss", self.g_loss)
         self.d_loss_sum = tf.scalar_summary("d_loss", self.d_loss)
@@ -207,6 +214,7 @@ class DCGAN(object):
                         errD_fake = self.d_loss_fake.eval({self.z: batch_z})
                         errD_real = self.d_loss_real.eval({self.images: audio_batch})
                         errG = self.g_loss.eval({self.z: batch_z})
+                        #import IPython; IPython.embed()
 
 
                     counter += 1
@@ -245,7 +253,7 @@ class DCGAN(object):
                 coord.join(threads)
 
     #@V @F Need to modify to 1D 
-    def discriminator(self, image, y=None, reuse=False):
+    def discriminator(self, image, y=None, use_disc=False, reuse=False):
         if reuse:
             tf.get_variable_scope().reuse_variables()
 
@@ -255,8 +263,11 @@ class DCGAN(object):
             h1 = lrelu(self.d_bn1(conv1d(h0, self.df_dim*2, name='d_h1_conv')))
             h2 = lrelu(self.d_bn2(conv1d(h1, self.df_dim*4, name='d_h2_conv')))
             h3 = lrelu(self.d_bn3(conv1d(h2, self.df_dim*8, name='d_h3_conv')))
-
-            h4 = linear(tf.reshape(h3, [self.batch_size, -1]), 1, 'd_h3_lin')
+            if use_disc:
+                h_disc = mc_disc_layer(tf.reshape(h3, [self.batch_size, -1]))
+                h4 = linear(h_disc, 1, 'd_h3_lin')
+            else:
+                h4 = linear(tf.reshape(h3, [self.batch_size, -1]), 1, 'd_h3_lin')
 
             return tf.nn.sigmoid(h4), h4
 

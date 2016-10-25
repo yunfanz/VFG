@@ -108,6 +108,30 @@ def deconv1d(input_, output_shape,
 def lrelu(x, leak=0.2, name="lrelu"):
   return tf.maximum(x, leak*x)
 
+#G
+def mb_disc_layer(input_,B=100, C=5, stddev=0.2, with_w=False):
+    ''' mini-batch discrimination '''
+    shape = input_.get_shape().as_list()
+
+    with tf.variable_scope("mb_disc"):
+        tensor = tf.get_variable("Tensor", [shape[-1], B, C], tf.float32,
+                                 tf.random_normal_initializer(stddev=stddev), trainable=False)
+        #bias = tf.get_variable("bias", [output_length],
+        #    initializer=tf.constant_initializer(bias_start))
+        M = tf.matmul(input_, tensor)
+        diff = tf.get_variable('diff', [shape[0], shape[0], B, C], tf.float32, 
+                                tf.constant_initializer(0), trainable=False)
+        for i in range(shape[0]):
+            for j in range(shape[0]):
+                diff[i][j] = tf.sqrt(tf.squared_difference(M[i],M[j]))
+        ox = tf.reduce_sum(tf.exp(-diff),reduction_indices=[1,2])
+        output_ = tf.concat(1,[_input, ox])
+
+        if with_w:
+            return output_, tensor
+        else:
+            return output_
+
 def linear(input_, output_length, scope=None, stddev=0.02, bias_start=0.0, with_w=False):
     shape = input_.get_shape().as_list()
 
