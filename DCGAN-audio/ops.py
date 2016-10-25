@@ -122,10 +122,10 @@ def mb_disc_layer(input_,B=200, C=5, stddev=0.02, with_w=False):
 
         diff = []
         for i in range(shape[0]):  #loop over samples in mini_batch
-            diff.append(tf.sqrt(tf.squared_difference(M[i],M)))
+            diff.append(tf.squared_difference(M[i],M))
         diff = tf.pack(diff)
 
-        ox = tf.reduce_sum(tf.exp(-diff),reduction_indices=[1,3])
+        ox = tf.exp(-tf.sqrt(tf.reduce_sum(diff,reduction_indices=[1,3])))
         output_ = tf.concat(1,[input_, ox])
         #import IPython; IPython.embed()
         #print(output_.get_shape())
