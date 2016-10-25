@@ -81,7 +81,7 @@ class DCGAN(object):
         self.use_disc = use_disc
         self.build_model(self.dataset_name)
 
-    def build_model(self, dataset, use_disc):
+    def build_model(self, dataset):
         if self.y_dim:
             self.y= tf.placeholder(tf.float32, [self.batch_size, self.y_dim], name='y')
         #G
@@ -98,16 +98,16 @@ class DCGAN(object):
         #G deprecated, this only applies for mnist
         if self.y_dim:
             self.G = self.generator(self.z, self.y)
-            self.D, self.D_logits = self.discriminator(self.images, self.y, use_disc=self.use_disc, reuse=False)
+            self.D, self.D_logits = self.discriminator(self.images, self.y, reuse=False)
 
             self.sampler = self.sampler(self.z, self.y)
-            self.D_, self.D_logits = self.discriminator(self.G, self.y, use_disc=self.use_disc, reuse=True)
+            self.D_, self.D_logits = self.discriminator(self.G, self.y, reuse=True)
         else:
             self.G = self.generator(self.z)
-            self.D, self.D_logits = self.discriminator(self.images, use_disc=self.use_disc)
+            self.D, self.D_logits = self.discriminator(self.images)
 
             self.sampler = self.sampler(self.z)
-            self.D_, self.D_logits_ = self.discriminator(self.G, use_disc=self.use_disc, reuse=True)
+            self.D_, self.D_logits_ = self.discriminator(self.G, reuse=True)
         
 
         self.d_sum = tf.histogram_summary("d", self.D)
@@ -259,7 +259,7 @@ class DCGAN(object):
                 coord.join(threads)
 
     #@V @F Need to modify to 1D 
-    def discriminator(self, image, y=None, use_disc=False, reuse=False):
+    def discriminator(self, image, y=None, reuse=False):
         if reuse:
             tf.get_variable_scope().reuse_variables()
 
@@ -269,8 +269,9 @@ class DCGAN(object):
             h1 = lrelu(self.d_bn1(conv1d(h0, self.df_dim*2, name='d_h1_conv')))
             h2 = lrelu(self.d_bn2(conv1d(h1, self.df_dim*4, name='d_h2_conv')))
             h3 = lrelu(self.d_bn3(conv1d(h2, self.df_dim*8, name='d_h3_conv')))
-            if use_disc:
-                h_disc = mc_disc_layer(tf.reshape(h3, [self.batch_size, -1]))
+            #import IPython; IPython.embed()
+            if self.use_disc:
+                h_disc = mb_disc_layer(tf.reshape(h3, [self.batch_size, -1]))
                 h4 = linear(h_disc, 1, 'd_h3_lin')
             else:
                 h4 = linear(tf.reshape(h3, [self.batch_size, -1]), 1, 'd_h3_lin')

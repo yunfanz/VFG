@@ -56,7 +56,7 @@ def main(_):
                     FLAGS.sample_length = FLAGS.output_length
             dcgan = DCGAN(sess, image_size=FLAGS.image_size, sample_size=FLAGS.sample_size, batch_size=FLAGS.batch_size, z_dim=FLAGS.z_dim, 
                     output_length=FLAGS.output_length, sample_length=FLAGS.sample_length, c_dim=1,
-                    dataset_name=FLAGS.dataset, audio_params=FLAGS.audio_params, data_dir=FLAGS.data_dir, is_crop=FLAGS.is_crop, checkpoint_dir=FLAGS.checkpoint_dir)
+                    dataset_name=FLAGS.dataset, audio_params=FLAGS.audio_params, data_dir=FLAGS.data_dir, is_crop=FLAGS.is_crop, use_disc=FLAGS.use_disc, checkpoint_dir=FLAGS.checkpoint_dir)
         else:
             raise Exception('dataset not understood')
 
