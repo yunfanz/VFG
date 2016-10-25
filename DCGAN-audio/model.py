@@ -207,11 +207,14 @@ class DCGAN(object):
                         errD_real = self.d_loss_real.eval({self.images: audio_batch})
                         errG = self.g_loss.eval({self.z: batch_z})
 
+                        D_real = self.D.eval({self.images: audio_batch})
+                        D_fake = self.D_.eval({self.z: batch_z})
+
 
                     counter += 1
-                    print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f" \
+                    print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f, D: %.3f, D_: %.3f" \
                         % (epoch, idx, batch_idxs,
-                            time.time() - start_time, errD_fake+errD_real, errG))
+                            time.time() - start_time, errD_fake+errD_real, errG, D_real, D_fake))
 
                     if np.mod(counter, config.save_every) == 1:
                         #G
