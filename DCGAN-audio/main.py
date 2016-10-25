@@ -9,14 +9,15 @@ import json
 import warnings
 flags = tf.app.flags
 flags.DEFINE_integer("epoch", 25, "Epoch to train [25]")
+flags.DEFINE_integer("save_every", 100, "save sample outputs every [100]")
 flags.DEFINE_float("learning_rate", 0.0002, "Learning rate of for adam [0.0002]")
 flags.DEFINE_float("beta1", 0.5, "Momentum term of adam [0.5]")
 flags.DEFINE_integer("train_size", np.inf, "The number of train waveforms [np.inf]")
 flags.DEFINE_integer("sample_size", 1, "The size of sample batch waveforms [1]")
 flags.DEFINE_integer("batch_size", 1, "The size of input batch waveforms [1]")
 flags.DEFINE_integer("image_size", 108, "The size of image to use (will be center cropped) [108]")
-flags.DEFINE_integer("output_length", 1024, "The length of the output waveform to produce ")
-flags.DEFINE_integer("sample_length", 1024, "The length of the input waveforms; has to match output_length if is_train")
+flags.DEFINE_integer("output_length", 4096, "The length of the output waveform to produce ")
+flags.DEFINE_integer("sample_length", 4096, "The length of the input waveforms; has to match output_length if is_train")
 flags.DEFINE_integer("c_dim", 1, "Dimension of image color. [1]")
 flags.DEFINE_integer("z_dim", 100, "length of latent code. [100]")
 flags.DEFINE_string("dataset", "wav", "The name of dataset ['wav']")

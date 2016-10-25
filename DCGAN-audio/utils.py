@@ -12,6 +12,7 @@ from time import gmtime, strftime
 import tensorflow as tf
 import librosa
 import matplotlib.pyplot as plt
+import io
 pp = pprint.PrettyPrinter()
 #G
 #get_stddev = lambda x, k_h, k_w: 1/math.sqrt(k_w*k_h*x.get_shape()[-1])
@@ -23,6 +24,19 @@ def save_waveform(waveform, filename, title=None):
     if title:
       ax.set_title(title)
     plt.savefig(filename)
+#G
+def get_im_summary(waveform, title=None):
+    f, ax = plt.subplots(1)
+    ax.plot(waveform)
+    if title:
+      ax.set_title(title)
+    buf = io.BytesIO()
+    plt.savefig(buf)
+    buf.seek(0)
+    image = tf.image.decode_png(buf.getvalue(), channels=4)
+    image = tf.expand_dims(image, 0)
+    summary_op = tf.image_summary(title, image)
+    return summary_op
 # F
 def save_audios(waveform, filename, format='wav', sample_rate = 16000):
     ''' Save waveform into format specified by format argument.
