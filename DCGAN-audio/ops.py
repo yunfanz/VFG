@@ -109,7 +109,7 @@ def lrelu(x, leak=0.2, name="lrelu"):
   return tf.maximum(x, leak*x)
 
 #G
-def mb_disc_layer(input_,B=500, C=50, stddev=0.2, with_w=False):
+def mb_disc_layer(input_,B=2000, C=50, stddev=0.2, with_w=False):
     ''' mini-batch discrimination '''
     shape = input_.get_shape().as_list()
 
@@ -124,10 +124,10 @@ def mb_disc_layer(input_,B=500, C=50, stddev=0.2, with_w=False):
         for i in range(shape[0]):  #loop over samples in mini_batch
             diff.append(tf.sqrt(tf.squared_difference(M[i],M)))
         diff = tf.pack(diff)
-        
+
         ox = tf.reduce_sum(tf.exp(-diff),reduction_indices=[1,3])
         output_ = tf.concat(1,[input_, ox])
-        print(output_.get_shape())
+        #print(output_.get_shape())
         if with_w:
             return output_, tensor
         else:
