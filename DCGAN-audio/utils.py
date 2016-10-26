@@ -18,18 +18,24 @@ pp = pprint.PrettyPrinter()
 #get_stddev = lambda x, k_h, k_w: 1/math.sqrt(k_w*k_h*x.get_shape()[-1])
 
 #G
-def save_waveform(waveform, filename, title=None):
-    f, ax = plt.subplots(1)
-    ax.plot(waveform)
+def save_waveform(waveform, filename, title=None, maxplot=4):
+    num_plot = min(maxplot, waveform.shape[0])
+    f = plt.figure()
     if title:
-      ax.set_title(title)
+      plt.title(title)
+    for j in range(num_plot):
+      ax = plt.subplot(num_plot,1,j+1)
+      ax.plot(waveform[j])
     plt.savefig(filename)
 #G
-def get_im_summary(waveform, title=None):
-    f, ax = plt.subplots(1)
-    ax.plot(waveform)
+def get_im_summary(waveform, title=None, maxplot=4):
+    num_plot = min(maxplot, waveform.shape[0])
+    f = plt.figure()
     if title:
-      ax.set_title(title)
+      plt.title(title)
+    for j in range(num_plot):
+      ax = plt.subplot(num_plot,1,j+1)
+      ax.plot(waveform[j])
     buf = io.BytesIO()
     plt.savefig(buf)
     buf.seek(0)
@@ -198,7 +204,7 @@ def visualize(sess, dcgan, config, option):
     save_images(samples, [8, 8], './samples/test_%s.png' % strftime("%Y-%m-%d %H:%M:%S", gmtime()))
   elif option == 1:
     values = np.arange(0, 1, 1./config.batch_size)
-    for idx in xrange(100):
+    for idx in range(100):
       print(" [*] %d" % idx)
       z_sample = np.zeros([config.batch_size, dcgan.z_dim])
       for kdx, z in enumerate(z_sample):
@@ -220,7 +226,7 @@ def visualize(sess, dcgan, config, option):
       make_gif(samples, './samples/test_gif_%s.gif' % (idx))
   elif option == 3:
     values = np.arange(0, 1, 1./config.batch_size)
-    for idx in xrange(100):
+    for idx in range(100):
       print(" [*] %d" % idx)
       z_sample = np.zeros([config.batch_size, dcgan.z_dim])
       for kdx, z in enumerate(z_sample):
@@ -232,7 +238,7 @@ def visualize(sess, dcgan, config, option):
     image_set = []
     values = np.arange(0, 1, 1./config.batch_size)
 
-    for idx in xrange(100):
+    for idx in range(100):
       print(" [*] %d" % idx)
       z_sample = np.zeros([config.batch_size, dcgan.z_dim])
       for kdx, z in enumerate(z_sample): z[idx] = values[kdx]

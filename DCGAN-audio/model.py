@@ -207,8 +207,8 @@ class DCGAN(object):
                         errD_real = self.d_loss_real.eval({self.images: audio_batch})
                         errG = self.g_loss.eval({self.z: batch_z})
 
-                        D_real = self.D.eval({self.images: audio_batch})
-                        D_fake = self.D_.eval({self.z: batch_z})
+                        D_real = self.D.eval({self.images: audio_batch}).mean()
+                        D_fake = self.D_.eval({self.z: batch_z}).mean()
 
 
                     counter += 1
@@ -228,8 +228,8 @@ class DCGAN(object):
                         if config.dataset == 'wav':
                             im_title = "d_loss: %.5f, g_loss: %.5f" % (d_loss, g_loss)
                             file_str = '{:02d}_{:04d}'.format(epoch, idx)
-                            save_waveform(samples[0],'./samples/train_'+file_str, title=im_title)
-                            im_sum = get_im_summary(samples[0], title=file_str+im_title)
+                            save_waveform(samples,'./samples/train_'+file_str, title=im_title)
+                            im_sum = get_im_summary(samples, title=file_str+im_title)
                             summary_str = self.sess.run(im_sum)
                             self.writer.add_summary(summary_str, counter)
                             
