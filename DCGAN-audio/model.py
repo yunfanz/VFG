@@ -14,7 +14,7 @@ class DCGAN(object):
                  batch_size=1, sample_size = 1, output_length=1024, sample_length=1024,
                  y_dim=None, z_dim=100, gf_dim=64, df_dim=64,
                  gfc_dim=1024, dfc_dim=1024, c_dim=1, dataset_name='default', data_dir=None,
-                 audio_params=None, checkpoint_dir=None, use_disc=False):
+                 audio_params=None, checkpoint_dir=None, out_dir=None, use_disc=False):
         """
 
         Args:
@@ -153,7 +153,7 @@ class DCGAN(object):
         self.g_sum = tf.merge_summary([self.z_sum, self.d__sum, 
             self.G_sum, self.d_loss_fake_sum, self.g_loss_sum])
         self.d_sum = tf.merge_summary([self.z_sum, self.d_sum, self.d_loss_real_sum, self.d_loss_sum])
-        self.writer = tf.train.SummaryWriter("./logs", self.sess.graph)
+        self.writer = tf.train.SummaryWriter(config.out_dir+"/logs", self.sess.graph)
         sample_z = np.random.uniform(-1, 1, size=(self.sample_size , self.z_dim))
 
         if config.dataset == 'wav':
@@ -199,9 +199,9 @@ class DCGAN(object):
                         self.writer.add_summary(summary_str, counter)
 
                         # Run g_optim twice to make sure that d_loss does not go to zero (different from paper)
-                        # _, summary_str = self.sess.run([g_optim, self.g_sum],
-                        #     feed_dict={ self.z: batch_z })
-                        # self.writer.add_summary(summary_str, counter)
+                        _, summary_str = self.sess.run([g_optim, self.g_sum],
+                            feed_dict={ self.z: batch_z })
+                        self.writer.add_summary(summary_str, counter)
                         
                         errD_fake = self.d_loss_fake.eval({self.z: batch_z})
                         errD_real = self.d_loss_real.eval({self.images: audio_batch})
@@ -219,21 +219,24 @@ class DCGAN(object):
                     if np.mod(counter, config.save_every) == 1:
                         #G
                         if config.dataset == 'wav':
+                            # samples, d_loss, g_loss = self.sess.run(
+                            #     [self.sampler, self.d_loss, self.g_loss],
+                            #     feed_dict={self.z: sample_z, self.images: sample_images.eval()}
+                            # )
                             samples, d_loss, g_loss = self.sess.run(
                                 [self.sampler, self.d_loss, self.g_loss],
-                                feed_dict={self.z: sample_z, self.images: sample_images.eval()}
+                                feed_dict={self.z: batch_z, self.images: audio_batch}
                             )
-
-                        # G @F I'm passing saving wav files to you
+                        # Saving samples
                         if config.dataset == 'wav':
                             im_title = "d_loss: %.5f, g_loss: %.5f" % (d_loss, g_loss)
                             file_str = '{:02d}_{:04d}'.format(epoch, idx)
-                            save_waveform(samples,'./samples/train_'+file_str, title=im_title)
+                            save_waveform(samples,config.out_dir+'/samples/train_'+file_str, title=im_title)
                             im_sum = get_im_summary(samples, title=file_str+im_title)
                             summary_str = self.sess.run(im_sum)
                             self.writer.add_summary(summary_str, counter)
                             
-                            save_audios(samples[0], './samples/train_'+file_str+'.wav', 
+                            save_audios(samples[0], config.out_dir+'/samples/train_'+file_str+'.wav', 
                                 format='.wav', sample_rate=self.audio_params['sample_rate'])
                         print("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
 
@@ -296,7 +299,6 @@ class DCGAN(object):
 
         return tf.nn.tanh(h4)
 
-    #@V @F Need to modify to 1D 
     def sampler(self, z, y=None):
         tf.get_variable_scope().reuse_variables()
 
