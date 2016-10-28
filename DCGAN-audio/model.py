@@ -134,6 +134,27 @@ class DCGAN(object):
 
         self.saver = tf.train.Saver()
 
+    def generate(self, config):
+        '''generate samples from trained model'''
+        init = tf.initialize_all_variables()
+        self.sess.run(init)
+        self.writer = tf.train.SummaryWriter(config.out_dir+"/logs", self.sess.graph)
+        for counter in range(config.gen_size):
+            batch_z = np.random.uniform(-1, 1, [config.sample_size, self.z_dim]) \
+                                    .astype(np.float32)
+            samples= self.sess.run(self.sampler, feed_dict={self.z: batch_z})
+            file_str = '{:02d}'.format(counter)
+
+            save_waveform(samples,config.out_dir+'/_'+file_str, title='')
+            im_sum = get_im_summary(samples, title=file_str)
+            summary_str = self.sess.run(im_sum)
+            self.writer.add_summary(summary_str, counter)
+            
+            save_audios(samples[0], config.out_dir+'/_'+file_str+'.wav', 
+                format='.wav', sample_rate=self.audio_params['sample_rate'])
+
+
+
     def train(self, config):
         """Train DCGAN"""
         #G

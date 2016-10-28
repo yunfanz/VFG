@@ -17,34 +17,46 @@ flags.DEFINE_integer("train_size", np.inf, "The number of train waveforms [np.in
 flags.DEFINE_integer("sample_size", 1, "The size of sample batch waveforms [1]")
 flags.DEFINE_integer("batch_size", 1, "The size of input batch waveforms [1]")
 flags.DEFINE_integer("image_size", 108, "The size of image to use (will be center cropped) [108]")
+flags.DEFINE_integer("gen_size", 1, "How many batches to generate (generate mode only)")
 flags.DEFINE_integer("output_length", 4096, "The length of the output waveform to produce ")
-flags.DEFINE_integer("sample_length", 4096, "The length of the input waveforms; has to match output_length if is_train")
+flags.DEFINE_integer("sample_length", 4096, "The length of the input waveforms; has to match output_length if mode is train")
 flags.DEFINE_integer("c_dim", 1, "Dimension of image color. [1]")
 flags.DEFINE_integer("z_dim", 100, "length of latent code. [100]")
 flags.DEFINE_string("dataset", "wav", "The name of dataset ['wav']")
 flags.DEFINE_string("data_dir", None, "Optional path to data directory")
 flags.DEFINE_string("out_dir", None, "Directory name to save the output samples, checkpoint, log")
 flags.DEFINE_string("checkpoint_dir", None, "Directory name to LOAD checkpoint, new checkpoints will be saved to out_dir/checkpoint")
-flags.DEFINE_boolean("is_train", False, "True for training, False for testing [False]")
-#flags.DEFINE_boolean("is_crop", False, "True for training, False for testing [False]")
+#lags.DEFINE_boolean("is_train", False, "True for training, False for testing [False]")
+flags.DEFINE_string("mode", 'generate', "running mode, has to be either train or generate")
 flags.DEFINE_boolean("use_disc", False, "Whether to use mini-batch discrimination on the discriminator")
 flags.DEFINE_boolean("visualize", False, "True for visualizing, False for nothing [False]")
 flags.DEFINE_string("audio_params", './audio_params.json', 'JSON file with tune-specific parameters.')
 FLAGS = flags.FLAGS
 
 def main(_):
-    STARTED_DATESTRING = "{0:%Y-%m-%dT%H-%M-%S}".format(datetime.now())
+    STARTED_DATESTRING = "{0:%Y-%m-%dT%H:%M:%S}".format(datetime.now())
     pp.pprint(flags.FLAGS.__flags)
-    if FLAGS.out_dir is None:
-        FLAGS.out_dir = 'out/train_'+STARTED_DATESTRING
-        print('Using default out_dir {0}'.format(FLAGS.out_dir))
-    if FLAGS.checkpoint_dir is None:
-        FLAGS.checkpoint_dir = FLAGS.out_dir+'/checkpoint'
+    assert FLAGS.mode in ('train','generate'), "mode must be 'train' or 'generate'!"
+    if FLAGS.mode == 'train': 
+        if FLAGS.out_dir is None:
+            FLAGS.out_dir = 'out/train_'+STARTED_DATESTRING
+            print('Using default out_dir {0}'.format(FLAGS.out_dir))
+        else:
+            if FLAGS.out_dir.endswith('/'): FLAGS.out_dir = FLAGS.out_dir[:-1]
+        if FLAGS.checkpoint_dir is None:
+            FLAGS.checkpoint_dir = FLAGS.out_dir+'/checkpoint'
+    else: 
+        if FLAGS.checkpoint_dir is None:
+            raise Exception('Cannot generate: checkpoint {0} does not exist!'.format(FLAGS.checkpoint_dir))
+        if FLAGS.out_dir is None:
+            FLAGS.out_dir = 'out/gene_'+STARTED_DATESTRING
+
     if not os.path.exists(FLAGS.out_dir):
         os.makedirs(FLAGS.out_dir)
-        os.makedirs(FLAGS.out_dir+'/samples')
-        os.makedirs(FLAGS.out_dir+'/checkpoint')
-        os.makedirs(FLAGS.out_dir+'/logs')
+        if FLAGS.mode == 'train':
+            os.makedirs(FLAGS.out_dir+'/samples')
+            os.makedirs(FLAGS.out_dir+'/checkpoint')
+            os.makedirs(FLAGS.out_dir+'/logs')
     #if not os.path.exists(FLAGS.sample_dir):
     #    os.makedirs(FLAGS.sample_dir)
 
@@ -57,7 +69,7 @@ def main(_):
             FLAGS.learning_rate = audio_params['learning_rate']
             FLAGS.beta1 = audio_params['beta1']
             FLAGS.z_dim = audio_params['z_dim']
-            if FLAGS.is_train:
+            if FLAGS.mode == 'train':
                 if FLAGS.sample_length != FLAGS.output_length:
                     #G: may not need sample_length at all
                     warnings.warn('Training sample_length must be equal to output_length')
@@ -69,10 +81,12 @@ def main(_):
         else:
             raise Exception('dataset not understood')
 
-        if FLAGS.is_train:
+        if FLAGS.mode == 'train':
             dcgan.train(FLAGS)
         else:
+            print('Generating {0} batches of size {1} from checkpoint {2}'.format(FLAGS.gen_size, FLAGS.sample_size, FLAGS.checkpoint_dir))
             dcgan.load(FLAGS.checkpoint_dir)
+            dcgan.generate(FLAGS)
 
         if FLAGS.visualize:
             to_json("./web/js/layers.js", [dcgan.h0_w, dcgan.h0_b, dcgan.g_bn0],
