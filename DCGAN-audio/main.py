@@ -24,7 +24,7 @@ flags.DEFINE_integer("z_dim", 100, "length of latent code. [100]")
 flags.DEFINE_string("dataset", "wav", "The name of dataset ['wav']")
 flags.DEFINE_string("data_dir", None, "Optional path to data directory")
 flags.DEFINE_string("out_dir", None, "Directory name to save the output samples, checkpoint, log")
-flags.DEFINE_string("checkpoint_dir", None, "Directory name to checkpoint")
+flags.DEFINE_string("checkpoint_dir", None, "Directory name to LOAD checkpoint, new checkpoints will be saved to out_dir/checkpoint")
 flags.DEFINE_boolean("is_train", False, "True for training, False for testing [False]")
 #flags.DEFINE_boolean("is_crop", False, "True for training, False for testing [False]")
 flags.DEFINE_boolean("use_disc", False, "Whether to use mini-batch discrimination on the discriminator")
@@ -43,7 +43,7 @@ def main(_):
     if not os.path.exists(FLAGS.out_dir):
         os.makedirs(FLAGS.out_dir)
         os.makedirs(FLAGS.out_dir+'/samples')
-        os.makedirs(FLAGS.checkpoint_dir)
+        os.makedirs(FLAGS.out_dir+'/checkpoint')
         os.makedirs(FLAGS.out_dir+'/logs')
     #if not os.path.exists(FLAGS.sample_dir):
     #    os.makedirs(FLAGS.sample_dir)
