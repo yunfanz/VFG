@@ -45,7 +45,6 @@ def process_audio(in_path, ext, out_path='./preprocessed', sample_len=10):
 		os.mkdir(out_path)
 	
 	pattern = '*.' + ext
-	print pattern
 	for root, dirnames, filenames in os.walk(in_path):
 	    for fn in fnmatch.filter(filenames, pattern):
 	    	filename, _ = os.path.splitext(fn)
@@ -54,12 +53,11 @@ def process_audio(in_path, ext, out_path='./preprocessed', sample_len=10):
 	        len_in_sec = sound.duration_seconds
 	        
 	        if len_in_sec == 0:
-	        	print 'zero-length file encountered: ' + str(filename) + '\n Passed.'
+	        	print('zero-length file encountered: ' + str(filename) + '\n Passed.')
 	        	continue
 	        
 	        num_samples = int(math.ceil(len_in_sec/sample_len))
 	        for i in range(num_samples-1):
-	        	print 'hello'
 	        	begin = i*sample_len*SEC_TO_MILLISEC
 	        	end = (i+1)*sample_len*SEC_TO_MILLISEC
 	        	sample = sound[begin:end]
