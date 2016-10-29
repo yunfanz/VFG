@@ -30,7 +30,7 @@ flags.DEFINE_string("audio_params", None, 'JSON file with tune-specific paramete
 FLAGS = flags.FLAGS
 
 def main(_):
-    STARTED_DATESTRING = "{0:%Y-%m-%dT%H-%M-%S}".format(datetime.now())
+    STARTED_DATESTRING = "{0:%Y-%m-%dT%H:%M:%S}".format(datetime.now()).replace(":", "-")
     pp.pprint(flags.FLAGS.__flags)
 
     assert FLAGS.mode in ('train','generate'), "mode must be 'train' or 'generate'!"
