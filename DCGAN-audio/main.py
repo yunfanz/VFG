@@ -33,7 +33,8 @@ def main(_):
     STARTED_DATESTRING = "{0:%Y-%m-%dT%H:%M:%S}".format(datetime.now()).replace(":", "-")
     pp.pprint(flags.FLAGS.__flags)
 
-    assert FLAGS.mode in ('train','generate'), "mode must be 'train' or 'generate'!"
+    assert FLAGS.mode.lower() in ('train','generate'), "mode must be 'train' or 'generate'!"
+    FLAGS.mode = FLAGS.mode.lower()
     if FLAGS.mode == 'train': 
         if FLAGS.out_dir is None:
             FLAGS.out_dir = 'out/train_'+STARTED_DATESTRING
