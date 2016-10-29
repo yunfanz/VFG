@@ -1,0 +1,8 @@
+#required packages to run this project
+librosa
+numpy
+scipy
+matplotlib
+
+#this project also requires tensorflow to run. See tensorflow docs for
+#install instructions

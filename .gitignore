@@ -1,4 +1,5 @@
 ./DCGAN-audio/data
+./DCGAN-audio/out
 ./DCGAN-audio/samples
 *.pyc
 ./DCGAN-audio/checkpoint
