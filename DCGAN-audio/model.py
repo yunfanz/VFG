@@ -10,8 +10,8 @@ from ops import *
 from utils import *
 
 class DCGAN(object):
-    def __init__(self, sess, image_size=108, 
-                 batch_size=1, sample_size = 1, output_length=1024, sample_length=1024,
+    def __init__(self, sess,
+                 batch_size=1, sample_length=1024,
                  y_dim=None, z_dim=100, gf_dim=64, df_dim=64,
                  gfc_dim=1024, dfc_dim=1024, c_dim=1, dataset_name='default', data_dir=None,
                  audio_params=None, checkpoint_dir=None, out_dir=None, use_disc=False):
@@ -20,7 +20,7 @@ class DCGAN(object):
         Args:
             sess: TensorFlow session
             batch_size: The size of batch. Should be specified before training.
-            output_length: (optional) The resolution in pixels of the images. [64]
+            sample_length: (optional) The resolution in pixels of the images. [64]
             y_dim: (optional) Dimension of dim for y. [None]
             z_dim: (optional) Dimension of dim for Z. [100]
             gf_dim: (optional) Dimension of gen filters in first conv layer. [64]
@@ -32,10 +32,10 @@ class DCGAN(object):
         self.sess = sess
         self.is_grayscale = (c_dim == 1)
         self.batch_size = batch_size
-        self.image_size = image_size
-        self.sample_size = sample_size
-        self.output_length = output_length
+        #self.sample_size = sample_size
+        #self.output_length = output_length
         self.sample_length = sample_length
+        self.output_length = sample_length
         self.y_dim = y_dim
         self.z_dim = z_dim
 
@@ -82,7 +82,7 @@ class DCGAN(object):
         if dataset == 'wav':
             self.images = tf.placeholder(tf.float32, [self.batch_size] + [self.output_length, 1],
                                     name='real_images')
-            self.sample_images= tf.placeholder(tf.float32, [self.sample_size] + [self.output_length, 1],
+            self.sample_images= tf.placeholder(tf.float32, [self.batch_size] + [self.output_length, 1],
                                         name='sample_images')
         self.z = tf.placeholder(tf.float32, [None, self.z_dim],
                                 name='z')
@@ -136,21 +136,21 @@ class DCGAN(object):
 
     def generate(self, config):
         '''generate samples from trained model'''
-        init = tf.initialize_all_variables()
-        self.sess.run(init)
+        #init = tf.initialize_all_variables()
+        #self.sess.run(init)
         self.writer = tf.train.SummaryWriter(config.out_dir+"/logs", self.sess.graph)
         for counter in range(config.gen_size):
-            batch_z = np.random.uniform(-1, 1, [config.sample_size, self.z_dim]) \
+            batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim]) \
                                     .astype(np.float32)
             samples= self.sess.run(self.sampler, feed_dict={self.z: batch_z})
-            file_str = '{:02d}'.format(counter)
+            file_str = '{:03d}'.format(counter)
 
-            save_waveform(samples,config.out_dir+'/_'+file_str, title='')
+            save_waveform(samples,config.out_dir+'/'+file_str, title='')
             im_sum = get_im_summary(samples, title=file_str)
             summary_str = self.sess.run(im_sum)
             self.writer.add_summary(summary_str, counter)
             
-            save_audios(samples[0], config.out_dir+'/_'+file_str+'.wav', 
+            save_audios(samples[0], config.out_dir+'/'+file_str+'.wav', 
                 format='.wav', sample_rate=self.audio_params['sample_rate'])
 
 
@@ -174,11 +174,12 @@ class DCGAN(object):
         self.g_sum = tf.merge_summary([self.z_sum, self.d__sum, 
             self.G_sum, self.d_loss_fake_sum, self.g_loss_sum])
         self.d_sum = tf.merge_summary([self.z_sum, self.d_sum, self.d_loss_real_sum, self.d_loss_sum])
+        
         self.writer = tf.train.SummaryWriter(config.out_dir+"/logs", self.sess.graph)
-        sample_z = np.random.uniform(-1, 1, size=(self.sample_size , self.z_dim))
+        sample_z = np.random.uniform(-1, 1, size=(self.batch_size , self.z_dim))
 
         if config.dataset == 'wav':
-             sample_images = reader.dequeue(self.sample_size)
+             sample_images = reader.dequeue(self.batch_size)
 
         counter = 1
         start_time = time.time()
@@ -356,7 +357,7 @@ class DCGAN(object):
             data_dir,
             coord,
             sample_rate=self.audio_params['sample_rate'],
-            sample_size=self.sample_length,
+            sample_length=self.sample_length,
             silence_threshold=silence_threshold)
         return reader
 

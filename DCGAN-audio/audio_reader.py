@@ -68,13 +68,13 @@ class AudioReader(object):
                  audio_dir,
                  coord,
                  sample_rate,
-                 sample_size=None,
+                 sample_length=None,
                  silence_threshold=None,
                  queue_size=256):
         self.audio_dir = audio_dir
         self.sample_rate = sample_rate
         self.coord = coord
-        self.sample_size = sample_size
+        self.sample_length = sample_length
         self.silence_threshold = silence_threshold
         self.corpus_size = get_corpus_size(self.audio_dir)
         self.threads = []
@@ -108,14 +108,14 @@ class AudioReader(object):
                               "threshold, or adjust volume of the audio."
                               .format(filename))
 
-                if self.sample_size:
+                if self.sample_length:
                     # Cut samples into fixed size pieces
                     buffer_ = np.append(buffer_, audio)
-                    while len(buffer_) > self.sample_size:
-                        piece = np.reshape(buffer_[:self.sample_size], [-1, 1])
+                    while len(buffer_) > self.sample_length:
+                        piece = np.reshape(buffer_[:self.sample_length], [-1, 1])
                         sess.run(self.enqueue,
                                  feed_dict={self.sample_placeholder: piece})
-                        buffer_ = buffer_[self.sample_size:]
+                        buffer_ = buffer_[self.sample_length:]
                 else:
                     sess.run(self.enqueue,
                              feed_dict={self.sample_placeholder: audio})
