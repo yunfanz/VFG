@@ -5,6 +5,7 @@ Downloads the following:
 - Celeb-A dataset
 - LSUN dataset
 - MNIST dataset
+- VSTK dataset
 """
 
 from __future__ import print_function
@@ -13,14 +14,14 @@ import sys
 import gzip
 import json
 import shutil
-import zipfile
+import zipfile, tarfile
 import argparse
 import subprocess
 from six.moves import urllib
 
 parser = argparse.ArgumentParser(description='Download dataset for DCGAN.')
-parser.add_argument('datasets', metavar='N', type=str, nargs='+', choices=['celebA', 'lsun', 'mnist'],
-                   help='name of dataset to download [celebA, lsun, mnist]')
+parser.add_argument('datasets', metavar='N', type=str, nargs='+', choices=['celebA', 'lsun', 'mnist', 'VSTK'],
+                   help='name of dataset to download [celebA, lsun, mnist, VSTK]')
 
 def download(url, dirpath):
     filename = url.split('/')[-1]
@@ -55,6 +56,20 @@ def unzip(filepath):
     with zipfile.ZipFile(filepath) as zf:
         zf.extractall(dirpath)
     os.remove(filepath)
+
+def download_vstk(dirpath):
+    data_dir = 'VSTK'
+    if os.path.exists(os.path.join(dirpath, data_dir)):
+        print("The VSTK Dataset is already present")
+        return
+    url = 'http://homepages.inf.ed.ac.uk/jyamagis/release/VCTK-Corpus.tar.gz'
+    filepath = download(url, dirpath)
+    zip_dir = ''
+    with tarfile.TarFile(filepath) as tf:
+        tar_dir = tf.namelist()[0]
+        tf.extractall(dirpath)
+    os.remove(filepath)
+    os.rename(os.path.join(dirpath, tar_dir), os.path.join(dirpath, data_dir))
 
 def download_celeb_a(dirpath):
     data_dir = 'celebA'
@@ -139,3 +154,5 @@ if __name__ == '__main__':
         download_lsun('./data')
     if 'mnist' in args.datasets:
         download_mnist('./data')
+    if 'VSTK' in args.datasets:
+        download_vstk('./data')
