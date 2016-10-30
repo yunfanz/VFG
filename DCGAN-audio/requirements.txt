@@ -3,6 +3,7 @@ librosa
 numpy
 scipy
 matplotlib
+toolz
 
 #this project also requires tensorflow to run. See tensorflow docs for
 #install instructions
