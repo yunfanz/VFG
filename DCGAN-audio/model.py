@@ -151,9 +151,10 @@ class DCGAN(object):
             samples = self.sess.run(self.sampler, feed_dict={self.z: batch_z})
             file_str = '{:03d}'.format(counter)
 
-            samples = pc_chop(samples,200) #postprocess
+            samples = pc_chop(samples,100) #postprocess
             #wav_sum_str = tf.audio_summary('S',samples,sample_rate=self.audio_params['sample_rate'],max_outputs=10)
             #self.writer.add_summary(wav_sum_str, counter)
+            #import IPython; IPython.embed()
 
             save_waveform(samples,config.out_dir+'/'+file_str, title='')
             im_sum = get_im_summary(samples, title=file_str)
