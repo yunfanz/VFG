@@ -8,6 +8,7 @@ import json
 from audio_reader import AudioReader
 from ops import *
 from utils import *
+from postprocess import *
 
 class DCGAN(object):
     def __init__(self, sess,
@@ -148,7 +149,7 @@ class DCGAN(object):
                                     .astype(np.float32)
             samples= self.sess.run(self.sampler, feed_dict={self.z: batch_z})
             file_str = '{:03d}'.format(counter)
-
+            samples = pc_chop(samples) #postprocess
             save_waveform(samples,config.out_dir+'/'+file_str, title='')
             im_sum = get_im_summary(samples, title=file_str)
             summary_str = self.sess.run(im_sum)
