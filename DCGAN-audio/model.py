@@ -80,10 +80,14 @@ class DCGAN(object):
         #     self.y= tf.placeholder(tf.float32, [self.batch_size, self.y_dim], name='y')
         #G
         if dataset == 'wav':
-            self.images = tf.placeholder(tf.float32, [self.batch_size] + [self.output_length, 1],
-                                    name='real_images')
-            self.sample_images= tf.placeholder(tf.float32, [self.batch_size] + [self.output_length, 1],
-                                        name='sample_images')
+            self.audio_samples = tf.placeholder(tf.float32, [self.batch_size] + [self.output_length, 1],
+                                    name='real_samples')
+#            self.images = tf.placeholder(tf.float32, [self.batch_size] + [self.output_length, 1],
+#                                    name='real_images')
+            self.gen_audio_samples= tf.placeholder(tf.float32, [self.batch_size] + [self.output_length, 1],
+                                        name='gen_audio_samples')
+#            self.sample_images= tf.placeholder(tf.float32, [self.batch_size] + [self.output_length, 1],
+#                                        name='sample_images')
         self.z = tf.placeholder(tf.float32, [None, self.z_dim],
                                 name='z')
 
@@ -98,7 +102,7 @@ class DCGAN(object):
         #     self.D_, self.D_logits = self.discriminator(self.G, self.y, reuse=True)
         # else:
         self.G = self.generator(self.z)
-        self.D, self.D_logits = self.discriminator(self.images)
+        self.D, self.D_logits = self.discriminator(self.audio_samples)
 
         self.sampler = self.sampler(self.z)
         self.D_, self.D_logits_ = self.discriminator(self.G, reuse=True)
@@ -178,9 +182,6 @@ class DCGAN(object):
         self.writer = tf.train.SummaryWriter(config.out_dir+"/logs", self.sess.graph)
         sample_z = np.random.uniform(-1, 1, size=(self.batch_size , self.z_dim))
 
-        if config.dataset == 'wav':
-             sample_images = reader.dequeue(self.batch_size)
-
         counter = 1
         start_time = time.time()
         if self.load(self.checkpoint_dir):
@@ -212,7 +213,7 @@ class DCGAN(object):
                         audio_batch = audio_batch.eval()
                         # Update D network
                         _, summary_str = self.sess.run([d_optim, self.d_sum],
-                            feed_dict={ self.images: audio_batch, self.z: batch_z })
+                            feed_dict={ self.audio_samples: audio_batch, self.z: batch_z })
                         self.writer.add_summary(summary_str, counter)
 
                         # Update G network
@@ -226,10 +227,10 @@ class DCGAN(object):
                         self.writer.add_summary(summary_str, counter)
                         
                         errD_fake = self.d_loss_fake.eval({self.z: batch_z})
-                        errD_real = self.d_loss_real.eval({self.images: audio_batch})
+                        errD_real = self.d_loss_real.eval({self.audio_samples: audio_batch})
                         errG = self.g_loss.eval({self.z: batch_z})
 
-                        D_real = self.D.eval({self.images: audio_batch}).mean()
+                        D_real = self.D.eval({self.audio_samples: audio_batch}).mean()
                         D_fake = self.D_.eval({self.z: batch_z}).mean()
 
 
@@ -247,7 +248,7 @@ class DCGAN(object):
                             # )
                             samples, d_loss, g_loss = self.sess.run(
                                 [self.sampler, self.d_loss, self.g_loss],
-                                feed_dict={self.z: batch_z, self.images: audio_batch}
+                                feed_dict={self.z: batch_z, self.audio_samples: audio_batch}
                             )
                         # Saving samples
                         if config.dataset == 'wav':
@@ -275,12 +276,12 @@ class DCGAN(object):
                 coord.request_stop()
                 coord.join(threads)
 
-    def discriminator(self, image, y=None, reuse=False):
+    def discriminator(self, audio_sample, y=None, reuse=False):
         if reuse:
             tf.get_variable_scope().reuse_variables()
 
         #@V 1D
-        h0 = lrelu(conv1d(image, self.df_dim, name='d_h0_conv'))
+        h0 = lrelu(conv1d(audio_sample, self.df_dim, name='d_h0_conv'))
         h1 = lrelu(self.d_bn1(conv1d(h0, self.df_dim*2, name='d_h1_conv')))
         h2 = lrelu(self.d_bn2(conv1d(h1, self.df_dim*4, name='d_h2_conv')))
         h3 = lrelu(self.d_bn3(conv1d(h2, self.df_dim*8, name='d_h3_conv')))
