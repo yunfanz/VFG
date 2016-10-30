@@ -144,12 +144,17 @@ class DCGAN(object):
         #init = tf.initialize_all_variables()
         #self.sess.run(init)
         self.writer = tf.train.SummaryWriter(config.out_dir+"/logs", self.sess.graph)
+        #self.S_sum = tf.audio_summary("S", self.sampler, sample_rate=self.audio_params['sample_rate'])
         for counter in range(config.gen_size):
             batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim]) \
                                     .astype(np.float32)
-            samples= self.sess.run(self.sampler, feed_dict={self.z: batch_z})
+            samples = self.sess.run(self.sampler, feed_dict={self.z: batch_z})
             file_str = '{:03d}'.format(counter)
-            samples = pc_chop(samples) #postprocess
+
+            samples = pc_chop(samples,200) #postprocess
+            wav_sum_str = tf.summary.audio('S',samples,sample_rate=self.audio_params['sample_rate'],max_outputs=10)
+            self.writer.add_summary(wav_sum_str, counter)
+            
             save_waveform(samples,config.out_dir+'/'+file_str, title='')
             im_sum = get_im_summary(samples, title=file_str)
             summary_str = self.sess.run(im_sum)
