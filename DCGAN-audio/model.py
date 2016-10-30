@@ -185,9 +185,9 @@ class DCGAN(object):
         counter = 1
         start_time = time.time()
         if self.load(self.checkpoint_dir):
-            print(" [*] Load SUCCESS")
+            print(" [*] Successfully Loaded Checkpoint")
         else:
-            print(" [!] Load failed...")
+            print(" [!] Unable to load checkpoint. Skipping...")
 
         #G
         if config.dataset == 'wav':
@@ -236,7 +236,7 @@ class DCGAN(object):
 
                     counter += 1
                     print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f, D: %.3f, D_: %.3f" \
-                        % (epoch, idx, batch_idxs,
+                        % (epoch+1, idx+1, batch_idxs,
                             time.time() - start_time, errD_fake+errD_real, errG, D_real, D_fake))
 
                     if np.mod(counter, config.save_every) == 1:
