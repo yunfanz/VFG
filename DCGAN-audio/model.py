@@ -39,7 +39,7 @@ class DCGAN(object):
         self.output_length = sample_length
         self.y_dim = y_dim
         self.z_dim = z_dim
-
+        self.run_g = run_g
         self.c_dim = c_dim
 
         # batch normalization : deals with poor initialization helps gradient flow
@@ -225,20 +225,17 @@ class DCGAN(object):
                             feed_dict={ self.audio_samples: audio_batch, self.z: batch_z })
                         self.writer.add_summary(summary_str, counter)
 
-                        # Update G network
-                        _, summary_str = self.sess.run([g_optim, self.g_sum],
-                            feed_dict={ self.z: batch_z })
-                        self.writer.add_summary(summary_str, counter)
+                        # Update G network run_g times
+                        for i in range(self.run_g):
+                            _, summary_str = self.sess.run([g_optim, self.g_sum],
+                                feed_dict={ self.z: batch_z })
+                            self.writer.add_summary(summary_str, counter)
 
-                        # Run g_optim twice to make sure that d_loss does not go to zero (different from paper)
-                        _, summary_str = self.sess.run([g_optim, self.g_sum],
-                            feed_dict={ self.z: batch_z })
-                        self.writer.add_summary(summary_str, counter)
-                        
-                        # Run 3rd time
-                        _, summary_str = self.sess.run([g_optim, self.g_sum],
-                            feed_dict={ self.z: batch_z })
-                        self.writer.add_summary(summary_str, counter)
+                        # # Run g_optim twice to make sure that d_loss does not go to zero (different from paper)
+                        # _, summary_str = self.sess.run([g_optim, self.g_sum],
+                        #     feed_dict={ self.z: batch_z })
+                        # self.writer.add_summary(summary_str, counter)
+
 
                         errD_fake = self.d_loss_fake.eval({self.z: batch_z})
                         errD_real = self.d_loss_real.eval({self.audio_samples: audio_batch})

@@ -18,6 +18,7 @@ flags.DEFINE_integer("batch_size", 1, "The size of input batch waveforms [1]")
 flags.DEFINE_integer("gen_size", 1, "How many batches to generate (generate mode only)")
 flags.DEFINE_integer("sample_length", 4096, "The length of the waveforms, both input and output")
 flags.DEFINE_integer("c_dim", 1, "Dimension of image color. [1]")
+flags.DEFINE_integer("run_g", 2, "Number of times to update the generator per discriminator update [2]")
 #flags.DEFINE_integer("z_dim", 100, "length of latent code. [100]")
 flags.DEFINE_string("dataset", "wav", "The name of dataset ['wav']")
 flags.DEFINE_string("data_dir", None, "Optional path to data directory")
@@ -81,7 +82,7 @@ def main(_):
             dcgan = DCGAN(sess, batch_size=FLAGS.batch_size, z_dim=audio_params['z_dim'], 
                     sample_length=FLAGS.sample_length, c_dim=1, dataset_name=FLAGS.dataset, audio_params=FLAGS.audio_params, 
                     data_dir=FLAGS.data_dir, use_disc=FLAGS.use_disc, use_fourier=FLAGS.use_fourier,
-                    checkpoint_dir=FLAGS.checkpoint_dir, out_dir=FLAGS.out_dir)
+                    run_g=FLAGS.run_g, checkpoint_dir=FLAGS.checkpoint_dir, out_dir=FLAGS.out_dir)
         else:
             raise Exception('dataset not understood')
 
