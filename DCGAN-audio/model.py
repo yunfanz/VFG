@@ -235,6 +235,11 @@ class DCGAN(object):
                             feed_dict={ self.z: batch_z })
                         self.writer.add_summary(summary_str, counter)
                         
+                        # Run 3rd time
+                        _, summary_str = self.sess.run([g_optim, self.g_sum],
+                            feed_dict={ self.z: batch_z })
+                        self.writer.add_summary(summary_str, counter)
+
                         errD_fake = self.d_loss_fake.eval({self.z: batch_z})
                         errD_real = self.d_loss_real.eval({self.audio_samples: audio_batch})
                         errG = self.g_loss.eval({self.z: batch_z})
