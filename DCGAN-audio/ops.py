@@ -109,11 +109,11 @@ def lrelu(x, leak=0.2, name="lrelu"):
   return tf.maximum(x, leak*x)
 
 #G
-def mb_disc_layer(input_,B=1000, C=5, stddev=0.0002, with_w=False):
+def mb_disc_layer(input_,B=1000, C=5, stddev=0.0002, with_w=False,name='mb_disc'):
     ''' mini-batch discrimination '''
     shape = input_.get_shape().as_list()
 
-    with tf.variable_scope("mb_disc"):
+    with tf.variable_scope(name):
         tensor = tf.get_variable("Tensor", [shape[-1], B*C], tf.float32,
                                  tf.random_normal_initializer(stddev=stddev), trainable=False)
         #bias = tf.get_variable("bias", [output_length],

@@ -15,7 +15,7 @@ class DCGAN(object):
                  batch_size=1, sample_length=1024,
                  y_dim=None, z_dim=100, gf_dim=64, df_dim=64,
                  gfc_dim=1024, dfc_dim=1024, c_dim=1, dataset_name='default', data_dir=None,
-                 audio_params=None, checkpoint_dir=None, out_dir=None, use_disc=False):
+                 audio_params=None, checkpoint_dir=None, out_dir=None, use_disc=False, use_fourier=True):
         """
 
         Args:
@@ -45,9 +45,11 @@ class DCGAN(object):
         # batch normalization : deals with poor initialization helps gradient flow
         self.d_bn1 = batch_norm(name='d_bn1')
         self.d_bn2 = batch_norm(name='d_bn2')
-
-        if not self.y_dim:
-            self.d_bn3 = batch_norm(name='d_bn3')
+        self.d_bn3 = batch_norm(name='d_bn3')
+        if True:
+            self.d_bn1f = batch_norm(name='d_bn1f')
+            self.d_bn2f = batch_norm(name='d_bn2f')
+            self.d_bn3f = batch_norm(name='d_bn3f')
 
         self.g_bn0 = batch_norm(name='g_bn0')
         self.g_bn1 = batch_norm(name='g_bn1')
@@ -74,6 +76,7 @@ class DCGAN(object):
 
         self.checkpoint_dir = checkpoint_dir
         self.use_disc = use_disc
+        self.use_fourier = use_fourier
         self.build_model(self.dataset_name)
 
     def build_model(self, dataset):
@@ -103,10 +106,10 @@ class DCGAN(object):
         #     self.D_, self.D_logits = self.discriminator(self.G, self.y, reuse=True)
         # else:
         self.G = self.generator(self.z)
-        self.D, self.D_logits = self.discriminator(self.audio_samples)
+        self.D, self.D_logits = self.discriminator(self.audio_samples, include_fourier=self.use_fourier)
 
         self.sampler = self.sampler(self.z)
-        self.D_, self.D_logits_ = self.discriminator(self.G, reuse=True)
+        self.D_, self.D_logits_ = self.discriminator(self.G, reuse=True, include_fourier=self.use_fourier)
 
         
         #import IPython; IPython.embed()
@@ -141,17 +144,16 @@ class DCGAN(object):
 
     def generate(self, config):
         '''generate samples from trained model'''
-        #init = tf.initialize_all_variables()
-        #self.sess.run(init)
         self.writer = tf.train.SummaryWriter(config.out_dir+"/logs", self.sess.graph)
-        #self.S_sum = tf.audio_summary("S", self.sampler, sample_rate=self.audio_params['sample_rate'])
         for counter in range(config.gen_size):
             batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim]) \
                                     .astype(np.float32)
             samples = self.sess.run(self.sampler, feed_dict={self.z: batch_z})
             file_str = '{:03d}'.format(counter)
 
-            samples = pc_chop(samples,100) #postprocess
+            #samples = pc_chop(samples,100) #postprocess
+            #samples = (samples*32767.0).astype('int16')
+            #import IPython; IPython.embed()
             #wav_sum_str = tf.audio_summary('S',samples,sample_rate=self.audio_params['sample_rate'],max_outputs=10)
             #self.writer.add_summary(wav_sum_str, counter)
             #import IPython; IPython.embed()
@@ -236,7 +238,7 @@ class DCGAN(object):
                         errD_fake = self.d_loss_fake.eval({self.z: batch_z})
                         errD_real = self.d_loss_real.eval({self.audio_samples: audio_batch})
                         errG = self.g_loss.eval({self.z: batch_z})
-
+                        #G average over batch
                         D_real = self.D.eval({self.audio_samples: audio_batch}).mean()
                         D_fake = self.D_.eval({self.z: batch_z}).mean()
 
@@ -257,6 +259,7 @@ class DCGAN(object):
                                 [self.sampler, self.d_loss, self.g_loss],
                                 feed_dict={self.z: batch_z, self.audio_samples: audio_batch}
                             )
+                            #import IPython; IPython.embed()
                         # Saving samples
                         if config.dataset == 'wav':
                             im_title = "d_loss: %.5f, g_loss: %.5f" % (d_loss, g_loss)
@@ -283,23 +286,39 @@ class DCGAN(object):
                 coord.request_stop()
                 coord.join(threads)
 
-    def discriminator(self, audio_sample, y=None, reuse=False):
+    def discriminator(self, audio_sample, y=None, reuse=False, include_fourier=True):
         if reuse:
             tf.get_variable_scope().reuse_variables()
 
-        #@V 1D
         h0 = lrelu(conv1d(audio_sample, self.df_dim, name='d_h0_conv'))
         h1 = lrelu(self.d_bn1(conv1d(h0, self.df_dim*2, name='d_h1_conv')))
         h2 = lrelu(self.d_bn2(conv1d(h1, self.df_dim*4, name='d_h2_conv')))
         h3 = lrelu(self.d_bn3(conv1d(h2, self.df_dim*8, name='d_h3_conv')))
-        #import IPython; IPython.embed()
         if self.use_disc:
-            h_disc = mb_disc_layer(tf.reshape(h3, [self.batch_size, -1]))
+            h_disc = mb_disc_layer(tf.reshape(h3, [self.batch_size, -1]),name='mb_disc')
             h4 = linear(h_disc, 1, 'd_h3_lin')
         else:
             h4 = linear(tf.reshape(h3, [self.batch_size, -1]), 1, 'd_h3_lin')
 
-        return tf.nn.sigmoid(h4), h4
+        if include_fourier:
+            fourier_sample = get_fourier(audio_sample)
+            h0_f = lrelu(conv1d(fourier_sample, self.df_dim, name='d_h0_f_conv'))
+            h1_f = lrelu(self.d_bn1f(conv1d(h0_f, self.df_dim*2, name='d_h1_f_conv')))
+            h2_f = lrelu(self.d_bn2f(conv1d(h1_f, self.df_dim*4, name='d_h2_f_conv')))
+            h3_f = lrelu(self.d_bn3f(conv1d(h2_f, self.df_dim*8, name='d_h3_f_conv')))
+            #import IPython; IPython.embed()
+            if self.use_disc:
+                h_f_disc = mb_disc_layer(tf.reshape(h3_f, [self.batch_size, -1]),name='f_mb_disc')
+                h4_f = linear(h_f_disc, 1, 'd_h3_f_lin')
+            else:
+                h4_f = linear(tf.reshape(h3_f, [self.batch_size, -1]), 1, 'd_h3_f_lin')
+            #h5 = linear(tf.concat(1,[h4,h4_f]),1, 'd_h5')
+            h5 = (h4+h4_f)/2
+        else:
+            h5 = h4
+            #import IPython; IPython.embed()
+
+        return tf.nn.sigmoid(h5), h5
 
     def generator(self, z, y=None):
 

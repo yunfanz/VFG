@@ -18,6 +18,15 @@ pp = pprint.PrettyPrinter()
 #get_stddev = lambda x, k_h, k_w: 1/math.sqrt(k_w*k_h*x.get_shape()[-1])
 
 #G
+def get_fourier(sample):
+    temp = tf.complex(sample,tf.zeros_like(sample))[...,0]
+    c_list = []
+    for i in range(temp.get_shape()[0]):
+      c_list.append(tf.fft(temp[i]))
+    c_sample = tf.expand_dims(tf.pack(c_list),-1)  #complex 64
+    fourier_sample = tf.concat(2,[tf.real(c_sample), tf.imag(c_sample)])
+    return fourier_sample
+#G
 def save_waveform(waveform, filename, title=None, maxplot=4):
     num_plot = min(maxplot, waveform.shape[0])
     f = plt.figure()

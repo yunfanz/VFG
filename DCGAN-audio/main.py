@@ -24,6 +24,7 @@ flags.DEFINE_string("data_dir", None, "Optional path to data directory")
 flags.DEFINE_string("out_dir", None, "Directory name to save the output samples, checkpoint, log")
 flags.DEFINE_string("checkpoint_dir", None, "Directory name to LOAD checkpoint, new checkpoints will be saved to out_dir/checkpoint")
 flags.DEFINE_string("mode", 'generate', "running mode, has to be either train or generate")
+flags.DEFINE_boolean("use_fourier", True, "Whether the discriminator will use Fourier information")
 flags.DEFINE_boolean("use_disc", False, "Whether to use mini-batch discrimination on the discriminator")
 flags.DEFINE_boolean("visualize", False, "True for visualizing, False for nothing [False]")
 flags.DEFINE_string("audio_params", None, 'JSON file with tune-specific parameters.')
@@ -64,6 +65,7 @@ def main(_):
             FLAGS.audio_params='./audio_params.json'
             copyfile(FLAGS.audio_params,FLAGS.checkpoint_dir+'/audio_params.json')
         else:
+            print('Using json file from {0}'.format(FLAGS.checkpoint_dir))
             FLAGS.audio_params=FLAGS.checkpoint_dir+'/audio_params.json'
 
 
@@ -78,7 +80,8 @@ def main(_):
             FLAGS.sample_length = audio_params['sample_length']
             dcgan = DCGAN(sess, batch_size=FLAGS.batch_size, z_dim=audio_params['z_dim'], 
                     sample_length=FLAGS.sample_length, c_dim=1, dataset_name=FLAGS.dataset, audio_params=FLAGS.audio_params, 
-                    data_dir=FLAGS.data_dir, use_disc=FLAGS.use_disc, checkpoint_dir=FLAGS.checkpoint_dir, out_dir=FLAGS.out_dir)
+                    data_dir=FLAGS.data_dir, use_disc=FLAGS.use_disc, use_fourier=FLAGS.use_fourier,
+                    checkpoint_dir=FLAGS.checkpoint_dir, out_dir=FLAGS.out_dir)
         else:
             raise Exception('dataset not understood')
 
