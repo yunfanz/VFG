@@ -90,9 +90,10 @@ class DCGAN(object):
 #                                    name='real_images')
             # self.gen_audio_samples= tf.placeholder(tf.float32, [self.batch_size] + [self.output_length, 1],
             #                             name='gen_audio_samples')
-            coord = tf.train.Coordinator()
-            reader = self.load_wav(coord)
-            audio_batch = reader.dequeue(self.batch_size).eval()
+            self.coord = tf.train.Coordinator()
+            self.reader = self.load_wav(self.coord)
+            audio_batch = self.reader.dequeue(self.batch_size)
+            #import IPython; IPython.embed()
 
         self.z = tf.placeholder(tf.float32, [None, self.z_dim],
                                 name='z')
@@ -202,14 +203,14 @@ class DCGAN(object):
 
         #G
         if config.dataset == 'wav':
-            threads = tf.train.start_queue_runners(sess=self.sess, coord=coord)
-            reader.start_threads(self.sess)
+            threads = tf.train.start_queue_runners(sess=self.sess, coord=self.coord)
+            self.reader.start_threads(self.sess)
             num_per_epoch = self.audio_params['num_per_epoch'] 
         #G
         try:
             for epoch in range(config.epoch):
                 if config.dataset == 'wav':
-                    batch_idxs = min(num_per_epoch, reader.corpus_size) // config.batch_size
+                    batch_idxs = min(num_per_epoch, self.reader.corpus_size) // config.batch_size
 
                 for idx in range(0, batch_idxs):
                     #G
@@ -241,11 +242,11 @@ class DCGAN(object):
 
                         errD_fake = self.d_loss_fake.eval({self.z: batch_z})
                         #errD_real = self.d_loss_real.eval({self.audio_samples: audio_batch})
-                        errD_real = self.d_loss_real
+                        errD_real = self.d_loss_real.eval()
                         errG = self.g_loss.eval({self.z: batch_z})
                         #G average over batch
                         #D_real = self.D.eval({self.audio_samples: audio_batch}).mean()
-                        D_real = self.D.mean()
+                        D_real = self.D.eval().mean()
                         D_fake = self.D_.eval({self.z: batch_z}).mean()
 
 
@@ -289,22 +290,24 @@ class DCGAN(object):
         #G
         finally:
             if config.dataset == 'wav':
-                coord.request_stop()
-                coord.join(threads)
+                self.coord.request_stop()
+                self.coord.join(threads)
 
     def discriminator(self, audio_sample, y=None, reuse=False, include_fourier=True):
         if reuse:
             tf.get_variable_scope().reuse_variables()
+        h4_dim = self.sample_length*self.df_dim//2
 
         h0 = lrelu(conv1d(audio_sample, self.df_dim, name='d_h0_conv'))
         h1 = lrelu(self.d_bn1(conv1d(h0, self.df_dim*2, name='d_h1_conv')))
         h2 = lrelu(self.d_bn2(conv1d(h1, self.df_dim*4, name='d_h2_conv')))
         h3 = lrelu(self.d_bn3(conv1d(h2, self.df_dim*8, name='d_h3_conv')))
-        if self.use_disc:
+        #import IPython; IPython.embed()
+        if self.use_disc: #not yet supported
             h_disc = mb_disc_layer(tf.reshape(h3, [self.batch_size, -1]),name='mb_disc')
-            h4 = linear(h_disc, 1, 'd_h3_lin')
+            h4 = linear(h_disc, 1, name='d_h3_lin')
         else:
-            h4 = linear(tf.reshape(h3, [self.batch_size, -1]), 1, 'd_h3_lin')
+            h4 = linear(tf.reshape(h3, [self.batch_size, -1]), 1, name='d_h3_lin',missing_dim=h4_dim)
 
         if include_fourier:
             fourier_sample = get_fourier(audio_sample)
@@ -313,13 +316,13 @@ class DCGAN(object):
             h2_f = lrelu(self.d_bn2f(conv1d(h1_f, self.df_dim*4, name='d_h2_f_conv')))
             h3_f = lrelu(self.d_bn3f(conv1d(h2_f, self.df_dim*8, name='d_h3_f_conv')))
             #import IPython; IPython.embed()
-            if self.use_disc:
+            if self.use_disc: #not yet supported
                 h_f_disc = mb_disc_layer(tf.reshape(h3_f, [self.batch_size, -1]),name='f_mb_disc')
-                h4_f = linear(h_f_disc, 1, 'd_h3_f_lin')
+                h4_f = linear(h_f_disc, 1, name='d_h3_f_lin')
             else:
-                h4_f = linear(tf.reshape(h3_f, [self.batch_size, -1]), 1, 'd_h3_f_lin')
-            #h5 = linear(tf.concat(1,[h4,h4_f]),1, 'd_h5')
-            h5 = (h4+h4_f)/2
+                h4_f = linear(tf.reshape(h3_f, [self.batch_size, -1]), 1, name='d_h3_f_lin', missing_dim=h4_dim)
+            h5 = linear(tf.concat(1,[h4,h4_f]),1, name='d_h5')
+            #h5 = (h4+h4_f)/2
         else:
             h5 = h4
             #import IPython; IPython.embed()

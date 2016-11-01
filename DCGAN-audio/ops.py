@@ -80,7 +80,7 @@ def conv1d(input_, output_dim,
         biases = tf.get_variable('biases', [output_dim], initializer=tf.constant_initializer(0.0))
         #import IPython; IPython.embed()
         #conv = tf.reshape(tf.nn.bias_add(conv, biases), conv.get_shape())
-        conv = tf.nn.bias_add(conv, biases)
+        conv = tf.nn.bias_add(conv, biases) #can use -1 in reshape, but not None
         #import IPython; IPython.embed()
 
         return conv
@@ -137,11 +137,11 @@ def mb_disc_layer(input_,B=1000, C=5, stddev=0.0002, with_w=False,name='mb_disc'
         else:
             return output_
 
-def linear(input_, output_length, scope=None, stddev=0.02, bias_start=0.0, with_w=False):
+def linear(input_, output_length, name=None, stddev=0.02, bias_start=0.0, with_w=False, missing_dim=-1):
     shape = input_.get_shape().as_list()
-
-    with tf.variable_scope(scope or "Linear"):
-        matrix = tf.get_variable("Matrix", [shape[-1], output_length], tf.float32,
+    if missing_dim < 0: missing_dim = shape[-1]
+    with tf.variable_scope(name or "Linear"):
+        matrix = tf.get_variable("Matrix", [missing_dim, output_length], tf.float32,
                                  tf.random_normal_initializer(stddev=stddev))
         bias = tf.get_variable("bias", [output_length],
             initializer=tf.constant_initializer(bias_start))
