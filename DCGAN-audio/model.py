@@ -15,7 +15,7 @@ class DCGAN(object):
                  batch_size=1, sample_length=1024,
                  y_dim=None, z_dim=100, gf_dim=64, df_dim=64, run_g=2,
                  gfc_dim=1024, dfc_dim=1024, c_dim=1, dataset_name='default', data_dir=None,
-                 audio_params=None, checkpoint_dir=None, out_dir=None, use_disc=False, use_fourier=True):
+                 audio_params=None, checkpoint_dir=None, out_dir=None, use_disc=False, use_fourier=True, mode='generate'):
         """
 
         Args:
@@ -77,21 +77,23 @@ class DCGAN(object):
         self.checkpoint_dir = checkpoint_dir
         self.use_disc = use_disc
         self.use_fourier = use_fourier
-        self.build_model(self.dataset_name)
+        if mode == 'train': self.build_model(self.dataset_name)
 
     def build_model(self, dataset):
         # if self.y_dim:
         #     self.y= tf.placeholder(tf.float32, [self.batch_size, self.y_dim], name='y')
         #G
         if dataset == 'wav':
-            self.audio_samples = tf.placeholder(tf.float32, [self.batch_size] + [self.output_length, 1],
-                                    name='real_samples')
+            # self.audio_samples = tf.placeholder(tf.float32, [self.batch_size] + [self.output_length, 1],
+            #                         name='real_samples')
 #            self.images = tf.placeholder(tf.float32, [self.batch_size] + [self.output_length, 1],
 #                                    name='real_images')
-            self.gen_audio_samples= tf.placeholder(tf.float32, [self.batch_size] + [self.output_length, 1],
-                                        name='gen_audio_samples')
-#            self.sample_images= tf.placeholder(tf.float32, [self.batch_size] + [self.output_length, 1],
-#                                        name='sample_images')
+            # self.gen_audio_samples= tf.placeholder(tf.float32, [self.batch_size] + [self.output_length, 1],
+            #                             name='gen_audio_samples')
+            coord = tf.train.Coordinator()
+            reader = self.load_wav(coord)
+            audio_batch = reader.dequeue(self.batch_size).eval()
+
         self.z = tf.placeholder(tf.float32, [None, self.z_dim],
                                 name='z')
 
@@ -106,7 +108,7 @@ class DCGAN(object):
         #     self.D_, self.D_logits = self.discriminator(self.G, self.y, reuse=True)
         # else:
         self.G = self.generator(self.z)
-        self.D, self.D_logits = self.discriminator(self.audio_samples, include_fourier=self.use_fourier)
+        self.D, self.D_logits = self.discriminator(audio_batch, include_fourier=self.use_fourier)
 
         self.sampler = self.sampler(self.z)
         self.D_, self.D_logits_ = self.discriminator(self.G, reuse=True, include_fourier=self.use_fourier)
@@ -171,9 +173,9 @@ class DCGAN(object):
     def train(self, config):
         """Train DCGAN"""
         #G
-        if config.dataset == 'wav':
-            coord = tf.train.Coordinator()
-            reader = self.load_wav(coord)
+        # if config.dataset == 'wav':
+        #     coord = tf.train.Coordinator()
+        #     reader = self.load_wav(coord)
 
         d_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
                           .minimize(self.d_loss, var_list=self.d_vars)
@@ -218,11 +220,11 @@ class DCGAN(object):
                                 .astype(np.float32)
                     #G
                     if config.dataset == 'wav':
-                        audio_batch = reader.dequeue(self.batch_size) 
-                        audio_batch = audio_batch.eval()
+                        # audio_batch = reader.dequeue(self.batch_size) 
+                        # audio_batch = audio_batch.eval()
                         # Update D network
                         _, summary_str = self.sess.run([d_optim, self.d_sum],
-                            feed_dict={ self.audio_samples: audio_batch, self.z: batch_z })
+                            feed_dict={ self.z: batch_z })
                         self.writer.add_summary(summary_str, counter)
 
                         # Update G network run_g times
@@ -238,10 +240,12 @@ class DCGAN(object):
 
 
                         errD_fake = self.d_loss_fake.eval({self.z: batch_z})
-                        errD_real = self.d_loss_real.eval({self.audio_samples: audio_batch})
+                        #errD_real = self.d_loss_real.eval({self.audio_samples: audio_batch})
+                        errD_real = self.d_loss_real
                         errG = self.g_loss.eval({self.z: batch_z})
                         #G average over batch
-                        D_real = self.D.eval({self.audio_samples: audio_batch}).mean()
+                        #D_real = self.D.eval({self.audio_samples: audio_batch}).mean()
+                        D_real = self.D.mean()
                         D_fake = self.D_.eval({self.z: batch_z}).mean()
 
 
@@ -259,7 +263,7 @@ class DCGAN(object):
                             # )
                             samples, d_loss, g_loss = self.sess.run(
                                 [self.sampler, self.d_loss, self.g_loss],
-                                feed_dict={self.z: batch_z, self.audio_samples: audio_batch}
+                                feed_dict={self.z: batch_z}
                             )
                             #import IPython; IPython.embed()
                         # Saving samples

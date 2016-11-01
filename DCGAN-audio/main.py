@@ -82,7 +82,7 @@ def main(_):
             dcgan = DCGAN(sess, batch_size=FLAGS.batch_size, z_dim=audio_params['z_dim'], 
                     sample_length=FLAGS.sample_length, c_dim=1, dataset_name=FLAGS.dataset, audio_params=FLAGS.audio_params, 
                     data_dir=FLAGS.data_dir, use_disc=FLAGS.use_disc, use_fourier=FLAGS.use_fourier,
-                    run_g=FLAGS.run_g, checkpoint_dir=FLAGS.checkpoint_dir, out_dir=FLAGS.out_dir)
+                    run_g=FLAGS.run_g, checkpoint_dir=FLAGS.checkpoint_dir, out_dir=FLAGS.out_dir, mode=FLAGS.mode)
         else:
             raise Exception('dataset not understood')
 

@@ -78,7 +78,10 @@ def conv1d(input_, output_dim,
         conv = tf.nn.conv1d(input_, w, stride=d_w, padding='SAME')
 
         biases = tf.get_variable('biases', [output_dim], initializer=tf.constant_initializer(0.0))
-        conv = tf.reshape(tf.nn.bias_add(conv, biases), conv.get_shape())
+        #import IPython; IPython.embed()
+        #conv = tf.reshape(tf.nn.bias_add(conv, biases), conv.get_shape())
+        conv = tf.nn.bias_add(conv, biases)
+        #import IPython; IPython.embed()
 
         return conv
 
