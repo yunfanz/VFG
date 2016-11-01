@@ -69,7 +69,7 @@ def conv_cond_concat(x, y):
     return tf.concat(3, [x, y*tf.ones([x_shapes[0], x_shapes[1], x_shapes[2], y_shapes[3]])])
 
 def conv1d(input_, output_dim,
-           k_w=5, d_w=2, stddev=0.02,
+           k_w=5, d_w=4, stddev=0.02,
            name="conv1d"):
     """Conputes a 1-D Convolution across a 3-D input"""
     with tf.variable_scope(name):
@@ -86,7 +86,7 @@ def conv1d(input_, output_dim,
         return conv
 
 def deconv1d(input_, output_shape,
-             k_w=5, d_w=2, stddev=0.02,
+             k_w=5, d_w=4, stddev=0.02,
             name="deconv1d", with_w=False):
     """Computes a filtered convolution across a 3-D input tensor."""
     with tf.variable_scope(name):

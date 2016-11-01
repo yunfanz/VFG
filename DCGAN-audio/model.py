@@ -296,7 +296,7 @@ class DCGAN(object):
     def discriminator(self, audio_sample, y=None, reuse=False, include_fourier=True):
         if reuse:
             tf.get_variable_scope().reuse_variables()
-        h4_dim = self.sample_length*self.df_dim//2
+        h4_dim = self.sample_length*self.df_dim//32
 
         h0 = lrelu(conv1d(audio_sample, self.df_dim, name='d_h0_conv'))
         h1 = lrelu(self.d_bn1(conv1d(h0, self.df_dim*2, name='d_h1_conv')))
@@ -332,7 +332,7 @@ class DCGAN(object):
     def generator(self, z, y=None):
 
         s = self.output_length
-        s2, s4, s8, s16 = int(s/2), int(s/4), int(s/8), int(s/16)
+        s2, s4, s8, s16 = int(s/2/2), int(s/4/4), int(s/8/8), int(s/16/16)
 
         # project `z` and reshape
         self.z_, self.h0_w, self.h0_b = linear(z, self.gf_dim*8*s16, 'g_h0_lin', with_w=True)
@@ -361,7 +361,7 @@ class DCGAN(object):
         tf.get_variable_scope().reuse_variables()
 
         s = self.output_length
-        s2, s4, s8, s16 = int(s/2), int(s/4), int(s/8), int(s/16)
+        s2, s4, s8, s16 = int(s/2/2), int(s/4/4), int(s/8/8), int(s/16/16)
 
         h0 = tf.reshape(linear(z, self.gf_dim*8*s16, 'g_h0_lin'),
                         [-1, s16, self.gf_dim * 8])
