@@ -308,7 +308,7 @@ class DCGAN(object):
 
                         errD_fake = self.d_loss_fake.eval({self.z: batch_z})
                         errD_real = self.d_loss_real.eval({self.audio_samples: audio_batch})
-                        errG = self.g_loss.eval({self.images: audio_batch, self.z: batch_z})
+                        errG = self.g_loss.eval({self.audio_samples: audio_batch, self.z: batch_z})
                         #G average over batch
                         D_real = self.D.eval({self.audio_samples: audio_batch}).mean()
                         D_fake = self.D_.eval({self.z: batch_z}).mean()
