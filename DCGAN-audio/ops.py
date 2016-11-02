@@ -146,3 +146,72 @@ def linear(input_, output_length, scope=None, stddev=0.02, bias_start=0.0, with_
             return tf.matmul(input_, matrix) + bias, matrix, bias
         else:
             return tf.matmul(input_, matrix) + bias
+
+#V
+def deconv_bn_relu_layer(input_, output_shape, bn_func=None, k_w=5, d_w=2, stddev=0.02, name="deconv1d-bn-relu", with_w=False, is_train=True):
+    """ Convenience layer: computes a single deconv --- batch normalization [OPTIONAL] --- relu layer
+
+    Input:
+    input_: a 3d array
+    output_shape: a 3d array that specifies the shape of output
+    bn_func: batch normalization function to use with this layer
+    k_w: receptive field width for weights w
+    d_w: stride across convolutional layer
+    stddev: standard deviation for weight initialization
+    name: name for viewing layer in tensorboard
+    with_w: boolean, whether to return weights and biases with output
+    is_train: boolean, whether to update the mean/var in the batch normalization layer
+    """
+    with tf.variable_scope(name):
+    # filter : [height, width, output_channels, in_channels]
+        w = tf.get_variable(name='w', shape=[1, k_w, output_shape[-1], input_.get_shape()[-1]],
+                           initializer=tf.random_normal_initializer(stddev=stddev))
+        output_shape.insert(0,1)
+        input_ = tf.expand_dims(input_, 0)
+        deconv = tf.nn.conv2d_transpose(input_, filter=w, output_shape=output_shape, strides=[1, 1, d_w, 1])
+        deconv = tf.reshape(deconv, output_shape)
+        deconv = tf.squeeze(deconv, [0]) #removes the first dummy dimension
+
+        biases = tf.get_variable('biases', [output_shape[-1]], initializer=tf.constant_initializer(0.0))
+        deconv = tf.reshape(tf.nn.bias_add(deconv, biases), deconv.get_shape())
+
+        if bn_func != None:
+            deconv = bn_func(deconv, is_train)
+
+        deconv_out = tf.nn.relu(deconv)
+
+        if with_w:
+            return deconv_out, w, biases
+        else:
+            return deconv_out
+
+#V
+def conv_bn_lrelu_layer(input_, output_dim, bn_func=None, k_w=5, d_w=2, stddev=0.02, name="conv1d-bn-lrelu"):
+    """ Convenience Layer: computes a single conv1d --- batch normalization[OPTIONAL] --- lrelu layer
+
+    Input:
+    input_: a 1d array
+    output_dim: an int, length of output array
+    bn_func: batch normalization function to use with this layer
+    k_w: receptive field width for weights w
+    d_w: stride across convolutional layer
+    stddev: standard deviation for weight initialization
+    name: name for viewing layer in tensorboard
+
+    Output:
+    conv_out : a 1d array of shape (output_dim,)
+    """
+    with tf.variable_scope(name):
+        w = tf.get_variable('w', [k_w, input_.get_shape()[-1], output_dim],
+                            initializer=tf.truncated_normal_initializer(stddev=stddev))
+        conv = tf.nn.conv1d(input_, w, stride=d_w, padding='SAME')
+
+        biases = tf.get_variable('biases', [output_dim], initializer=tf.constant_initializer(0.0))
+        conv = tf.reshape(tf.nn.bias_add(conv, biases), conv.get_shape())
+        
+        if bn_func != None:
+            conv = bn_func(conv)
+
+        conv_out = lrelu(conv)
+
+        return conv_out

@@ -293,6 +293,7 @@ class DCGAN(object):
             tf.get_variable_scope().reuse_variables()
 
         h0 = lrelu(conv1d(audio_sample, self.df_dim, name='d_h0_conv'))
+#        h1 = conv_bn_lrelu_layer(h0, self.df_dim*2, self.d_bn1, name='d_h1_conv')
         h1 = lrelu(self.d_bn1(conv1d(h0, self.df_dim*2, name='d_h1_conv')))
         h2 = lrelu(self.d_bn2(conv1d(h1, self.df_dim*4, name='d_h2_conv')))
         h3 = lrelu(self.d_bn3(conv1d(h2, self.df_dim*8, name='d_h3_conv')))
@@ -333,6 +334,8 @@ class DCGAN(object):
         self.h0 = tf.reshape(self.z_, [-1, s16, self.gf_dim * 8])
         h0 = tf.nn.relu(self.g_bn0(self.h0))
 
+#        self.h1, self.h1_w, self.h1_b = deconv_bn_relu_layer(h0, [self.batch_size, s8, self.gf_dim*4], self.g_bn1, name='g_h1', with_w=True)
+#        h1 = self.h1
         self.h1, self.h1_w, self.h1_b = deconv1d(h0, 
             [self.batch_size, s8, self.gf_dim*4], name='g_h1', with_w=True)
         h1 = tf.nn.relu(self.g_bn1(self.h1))
