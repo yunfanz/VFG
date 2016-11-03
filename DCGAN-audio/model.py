@@ -30,6 +30,8 @@ class DCGAN(object):
             gfc_dim: (optional) Dimension of gen units for for fully connected layer. [1024]
             dfc_dim: (optional) Dimension of discrim units for fully connected layer. [1024]
             c_dim: (optional) Dimension of image color. For grayscale input, set to 1. [3]
+            num_d_layers: (optional) number of layers that use batch normalization in the discriminator [3]
+            num_g_layers: (optional) number of layers that use batch normalization in the generator [3]
         """
         self.sess = sess
         self.is_grayscale = (c_dim == 1)
@@ -304,15 +306,22 @@ class DCGAN(object):
     def discriminator(self, audio_sample, y=None, reuse=False, include_fourier=True):
         if reuse:
             tf.get_variable_scope().reuse_variables()
+        
+        h = conv_bn_lrelu_layer(audio_sample, self.df_dim, name='d_h0_conv')
+        i = 2
 
-        h0 = conv_bn_lrelu_layer(audio_sample, self.df_dim, name='d_h0_conv')
+        for l in range(self.num_d_layers):
+            var_name = 'd_h' + str(l+1) + '_conv'
+            h = conv_bn_lrelu_layer(h, self.df_dim*i, self.dbn[l], name=var_name)
+            i *= 2
 #        h0 = lrelu(conv1d(audio_sample, self.df_dim, name='d_h0_conv'))
-        h1 = conv_bn_lrelu_layer(h0, self.df_dim*2, self.dbn[0], name='d_h1_conv')
+#        h1 = conv_bn_lrelu_layer(h0, self.df_dim*2, self.dbn[0], name='d_h1_conv')
 #        h1 = lrelu(self.dbn[0](conv1d(h0, self.df_dim*2, name='d_h1_conv')))
-        h2 = conv_bn_lrelu_layer(h1, self.df_dim*4, self.dbn[1], name='d_h2_conv')
+#        h2 = conv_bn_lrelu_layer(h1, self.df_dim*4, self.dbn[1], name='d_h2_conv')
 #        h2 = lrelu(self.dbn[1](conv1d(h1, self.df_dim*4, name='d_h2_conv')))
-        h3 = conv_bn_lrelu_layer(h2, self.df_dim*8, self.dbn[2], name='d_h3_conv')
+#        h3 = conv_bn_lrelu_layer(h2, self.df_dim*8, self.dbn[2], name='d_h3_conv')
 #        h3 = lrelu(self.dbn[2](conv1d(h2, self.df_dim*8, name='d_h3_conv')))
+        h3 = h
         if self.use_disc:
             h_disc = mb_disc_layer(tf.reshape(h3, [self.batch_size, -1]),name='mb_disc')
             h4 = linear(h_disc, 1, 'd_h3_lin')
