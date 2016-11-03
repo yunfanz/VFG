@@ -348,23 +348,24 @@ class DCGAN(object):
         self.z_, self.h0_w, self.h0_b = linear(z, self.gf_dim*8*s16, 'g_h0_lin', with_w=True)
 
         self.h0 = tf.reshape(self.z_, [-1, s16, self.gf_dim * 8])
-        h0 = tf.nn.relu(self.gbn[0](self.h0))
+        a0 = tf.nn.relu(self.gbn[0](self.h0))
 
-#        self.h1, self.h1_w, self.h1_b = deconv_bn_relu_layer(h0, [self.batch_size, s8, self.gf_dim*4], self.g_bn1, name='g_h1', with_w=True)
-#        h1 = self.h1
-        self.h1, self.h1_w, self.h1_b = deconv1d(h0, 
-            [self.batch_size, s8, self.gf_dim*4], name='g_h1', with_w=True)
-        h1 = tf.nn.relu(self.gbn[1](self.h1))
+        a1, self.h1, self.h1_w, self.h1_b = deconv_bn_relu_layer(a0, [self.batch_size, s8, self.gf_dim*4], self.gbn[1], name='g_h1', with_w=True)
+#        self.h1, self.h1_w, self.h1_b = deconv1d(h0, 
+#            [self.batch_size, s8, self.gf_dim*4], name='g_h1', with_w=True)
+#        h1 = tf.nn.relu(self.gbn[1](self.h1))
 
-        h2, self.h2_w, self.h2_b = deconv1d(h1,
-            [self.batch_size, s4, self.gf_dim*2], name='g_h2', with_w=True)
-        h2 = tf.nn.relu(self.gbn[2](h2))
+        a2, self.h2, self.h2_w, self.h2_b = deconv_bn_relu_layer(a1, [self.batch_size, s4, self.gf_dim*2], self.gbn[2], name='g_h2', with_w=True)
+#        h2, self.h2_w, self.h2_b = deconv1d(h1,
+#            [self.batch_size, s4, self.gf_dim*2], name='g_h2', with_w=True)
+#        h2 = tf.nn.relu(self.gbn[2](h2))
 
-        h3, self.h3_w, self.h3_b = deconv1d(h2,
-            [self.batch_size, s2, self.gf_dim*1], name='g_h3', with_w=True)
-        h3 = tf.nn.relu(self.gbn[3](h3))
+        a3, self.h3, self.h3_w, self.h3_b = deconv_bn_relu_layer(a2, [self.batch_size, s2, self.gf_dim*1], self.gbn[3], name='g_h3', with_w=True)
+#        h3, self.h3_w, self.h3_b = deconv1d(h2,
+#            [self.batch_size, s2, self.gf_dim*1], name='g_h3', with_w=True)
+#        h3 = tf.nn.relu(self.gbn[3](h3))
 
-        h4, self.h4_w, self.h4_b = deconv1d(h3,
+        h4, self.h4_w, self.h4_b = deconv1d(a3,
             [self.batch_size, s, self.c_dim], name='g_h4', with_w=True)
 
         return tf.nn.tanh(h4)
@@ -377,18 +378,22 @@ class DCGAN(object):
 
         h0 = tf.reshape(linear(z, self.gf_dim*8*s16, 'g_h0_lin'),
                         [-1, s16, self.gf_dim * 8])
-        h0 = tf.nn.relu(self.gbn[0](h0, train=False))
+        a0 = tf.nn.relu(self.gbn[0](h0, train=False))
+        a0 = tf.convert_to_tensor(a0, dtype=tf.float32)
 
-        h1 = deconv1d(h0, [self.batch_size, s8, self.gf_dim*4], name='g_h1')
-        h1 = tf.nn.relu(self.gbn[1](h1, train=False))
+        a1, _ = deconv_bn_relu_layer(a0, [self.batch_size, s8, self.gf_dim*4], self.gbn[1], name='g_h1', is_train=False)
+#        h1 = deconv1d(h0, [self.batch_size, s8, self.gf_dim*4], name='g_h1')
+#        h1 = tf.nn.relu(self.gbn[1](h1, train=False))
 
-        h2 = deconv1d(h1, [self.batch_size, s4, self.gf_dim*2], name='g_h2')
-        h2 = tf.nn.relu(self.gbn[2](h2, train=False))
+        a2, _ = deconv_bn_relu_layer(a1, [self.batch_size, s4, self.gf_dim*2], self.gbn[2], name='g_h2', is_train=False)
+#        h2 = deconv1d(h1, [self.batch_size, s4, self.gf_dim*2], name='g_h2')
+#        h2 = tf.nn.relu(self.gbn[2](h2, train=False))
 
-        h3 = deconv1d(h2, [self.batch_size, s2, self.gf_dim*1], name='g_h3')
-        h3 = tf.nn.relu(self.gbn[3](h3, train=False))
+        a3, _ = deconv_bn_relu_layer(a2, [self.batch_size, s2, self.gf_dim*1], self.gbn[3], name='g_h3', is_train=False)
+#        h3 = deconv1d(h2, [self.batch_size, s2, self.gf_dim*1], name='g_h3')
+#        h3 = tf.nn.relu(self.gbn[3](h3, train=False))
 
-        h4 = deconv1d(h3, [self.batch_size, s, self.c_dim], name='g_h4')
+        h4 = deconv1d(a3, [self.batch_size, s, self.c_dim], name='g_h4')
 
         return tf.nn.tanh(h4)
 
