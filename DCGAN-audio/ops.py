@@ -176,14 +176,14 @@ def deconv_bn_relu_layer(input_, output_shape, bn_func=None, k_w=5, d_w=2, stdde
         deconv = tf.reshape(tf.nn.bias_add(deconv, biases), deconv.get_shape())
 
         if bn_func != None:
-            deconv = bn_func(deconv, is_train)
+            deconv_out = bn_func(deconv, is_train)
 
-        deconv_out = tf.nn.relu(deconv)
+        deconv_out = tf.nn.relu(deconv_out)
 
         if with_w:
-            return deconv_out, w, biases
+            return deconv_out, deconv, w, biases
         else:
-            return deconv_out
+            return deconv_out, deconv
 
 #V
 def conv_bn_lrelu_layer(input_, output_dim, bn_func=None, k_w=5, d_w=2, stddev=0.02, name="conv1d-bn-lrelu"):
