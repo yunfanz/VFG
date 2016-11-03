@@ -367,7 +367,9 @@ class DCGAN(object):
         # have to manually set these dimensions to ensure proper run occurs
         sl = [int(s/2), int(s/4), int(s/8), int(s/16)]
         gf_sh = [8, 4, 2, 1]
-#        s2, s4, s8, s16 = int(s/2), int(s/4), int(s/8), int(s/16)
+        strides = [2, 2, 2, 2]
+
+        assert(len(strides) == self.num_g_layers, "Mismatch between number of strides and number of deconv layers")
 
         # project `z` and reshape
         self.z_, h0_w, h0_b = linear(z, self.gf_dim*gf_sh[0]*sl[-1], 'g_h0_lin', with_w=True)
@@ -379,31 +381,13 @@ class DCGAN(object):
         for l in range(self.num_g_layers):
             var_name = 'g_h' + str(l+1)
             a, h, h_w, h_b = deconv_bn_relu_layer(a, [self.batch_size, int(sl[k]), int(self.gf_dim*gf_sh[l+1])],
-                                                    self.gbn[l+1], name=var_name, with_w=True)
+                                                    self.gbn[l+1], d_w=strides[l], name=var_name, with_w=True)
             self.H.append(h); self.H_W.append(h_w); self.H_B.append(h_b)
             k -= 1
 
-#        a1, self.h1, self.h1_w, self.h1_b = deconv_bn_relu_layer(a0, [self.batch_size, s8, self.gf_dim*4], self.gbn[1], name='g_h1', with_w=True)
-#        self.h1, self.h1_w, self.h1_b = deconv1d(h0, 
-#            [self.batch_size, s8, self.gf_dim*4], name='g_h1', with_w=True)
-#        h1 = tf.nn.relu(self.gbn[1](self.h1))
-
-#        a2, self.h2, self.h2_w, self.h2_b = deconv_bn_relu_layer(a1, [self.batch_size, s4, self.gf_dim*2], self.gbn[2], name='g_h2', with_w=True)
-#        h2, self.h2_w, self.h2_b = deconv1d(h1,
-#            [self.batch_size, s4, self.gf_dim*2], name='g_h2', with_w=True)
-#        h2 = tf.nn.relu(self.gbn[2](h2))
-
-#        a3, self.h3, self.h3_w, self.h3_b = deconv_bn_relu_layer(a2, [self.batch_size, s2, self.gf_dim*1], self.gbn[3], name='g_h3', with_w=True)
-#        h3, self.h3_w, self.h3_b = deconv1d(h2,
-#            [self.batch_size, s2, self.gf_dim*1], name='g_h3', with_w=True)
-#        h3 = tf.nn.relu(self.gbn[3](h3))
-
         var_name = 'g_h'+str(self.num_g_layers+1)
-        h, h_w, h_b = deconv1d(a,
-            [self.batch_size, s, self.c_dim], name=var_name, with_w=True)
+        h, h_w, h_b = deconv1d(a, [self.batch_size, s, self.c_dim], d_w=strides[-1], name=var_name, with_w=True)
         self.H.append(h); self.H_W.append(h_w); self.H_B.append(h_b)
-#        h4, self.h4_w, self.h4_b = deconv1d(a3,
-#            [self.batch_size, s, self.c_dim], name='g_h4', with_w=True)
 
         return tf.nn.tanh(h)
 
@@ -411,10 +395,11 @@ class DCGAN(object):
         tf.get_variable_scope().reuse_variables()
 
         s = self.output_length
+
         # have to manually set these dimensions to ensure proper run occurs
         sl = [int(s/2), int(s/4), int(s/8), int(s/16)]
         gf_sh = [8, 4, 2, 1]
-#        s2, s4, s8, s16 = int(s/2), int(s/4), int(s/8), int(s/16)
+        strides = [2, 2, 2, 2]
 
         h0 = tf.reshape(linear(z, self.gf_dim*gf_sh[0]*sl[-1], 'g_h0_lin'),
                         [-1, sl[-1], self.gf_dim * gf_sh[0]])
@@ -422,25 +407,13 @@ class DCGAN(object):
 
         k = -2
         for l in range(self.num_g_layers):
-            var_name = 'g_h' + str(l+1)
+            layer_name = 'g_h' + str(l+1)
             a, _ = deconv_bn_relu_layer(a, [self.batch_size, int(sl[k]), int(self.gf_dim*gf_sh[l+1])],
-                                                    self.gbn[l+1], name=var_name, is_train=False)
+                                                    self.gbn[l+1], d_w=strides[l], name=layer_name, is_train=False)
             k -= 1
 
-#        a1, _ = deconv_bn_relu_layer(a0, [self.batch_size, s8, self.gf_dim*4], self.gbn[1], name='g_h1', is_train=False)
-#        h1 = deconv1d(h0, [self.batch_size, s8, self.gf_dim*4], name='g_h1')
-#        h1 = tf.nn.relu(self.gbn[1](h1, train=False))
-
-#        a2, _ = deconv_bn_relu_layer(a1, [self.batch_size, s4, self.gf_dim*2], self.gbn[2], name='g_h2', is_train=False)
-#        h2 = deconv1d(h1, [self.batch_size, s4, self.gf_dim*2], name='g_h2')
-#        h2 = tf.nn.relu(self.gbn[2](h2, train=False))
-
-#        a3, _ = deconv_bn_relu_layer(a2, [self.batch_size, s2, self.gf_dim*1], self.gbn[3], name='g_h3', is_train=False)
-#        h3 = deconv1d(h2, [self.batch_size, s2, self.gf_dim*1], name='g_h3')
-#        h3 = tf.nn.relu(self.gbn[3](h3, train=False))
-
-        var_name = 'g_h'+str(self.num_g_layers+1)
-        h = deconv1d(a, [self.batch_size, s, self.c_dim], name=var_name)
+        layer_name = 'g_h'+str(self.num_g_layers+1)
+        h = deconv1d(a, [self.batch_size, s, self.c_dim], d_w=strides[-1], name=layer_name)
 
         return tf.nn.tanh(h)
 
