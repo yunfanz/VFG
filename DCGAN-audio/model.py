@@ -351,31 +351,52 @@ class DCGAN(object):
     def generator(self, z, y=None):
 
         s = self.output_length
-        s2, s4, s8, s16 = int(s/2), int(s/4), int(s/8), int(s/16)
+        # have to manually set this dimension to match stride value
+        sl = [int(s/2), int(s/4), int(s/8), int(s/16)]
+#        s2, s4, s8, s16 = int(s/2), int(s/4), int(s/8), int(s/16)
 
         # project `z` and reshape
-        self.z_, self.h0_w, self.h0_b = linear(z, self.gf_dim*8*s16, 'g_h0_lin', with_w=True)
+        self.z_, h0_w, h0_b = linear(z, self.gf_dim*8*sl[-1], 'g_h0_lin', with_w=True)
+        h0 = tf.reshape(self.z_, [-1, sl[-1], self.gf_dim * 8])
+        a = tf.nn.relu(self.gbn[0](h0))
+        self.H, self.H_W, self.H_B = [h0], [h0_w], [h0_b]
 
-        self.h0 = tf.reshape(self.z_, [-1, s16, self.gf_dim * 8])
-        a0 = tf.nn.relu(self.gbn[0](self.h0))
+        i = 4
+        j = 1
+        k = -2
+        for l in range(self.num_g_layers):
+            var_name = 'g_h' + str(j)
+            a, h, h_w, h_b = deconv_bn_relu_layer(a, [self.batch_size, int(sl[k]), int(self.gf_dim*i)],
+                                                    self.gbn[j], name=var_name, with_w=True)
+            self.H.append(h)
+            self.H_W.append(h_w)
+            self.H_B.append(h_b)
+            i /= 2
+            j += 1
+            k -= 1
 
-        a1, self.h1, self.h1_w, self.h1_b = deconv_bn_relu_layer(a0, [self.batch_size, s8, self.gf_dim*4], self.gbn[1], name='g_h1', with_w=True)
+#        a1, self.h1, self.h1_w, self.h1_b = deconv_bn_relu_layer(a0, [self.batch_size, s8, self.gf_dim*4], self.gbn[1], name='g_h1', with_w=True)
 #        self.h1, self.h1_w, self.h1_b = deconv1d(h0, 
 #            [self.batch_size, s8, self.gf_dim*4], name='g_h1', with_w=True)
 #        h1 = tf.nn.relu(self.gbn[1](self.h1))
 
-        a2, self.h2, self.h2_w, self.h2_b = deconv_bn_relu_layer(a1, [self.batch_size, s4, self.gf_dim*2], self.gbn[2], name='g_h2', with_w=True)
+#        a2, self.h2, self.h2_w, self.h2_b = deconv_bn_relu_layer(a1, [self.batch_size, s4, self.gf_dim*2], self.gbn[2], name='g_h2', with_w=True)
 #        h2, self.h2_w, self.h2_b = deconv1d(h1,
 #            [self.batch_size, s4, self.gf_dim*2], name='g_h2', with_w=True)
 #        h2 = tf.nn.relu(self.gbn[2](h2))
 
-        a3, self.h3, self.h3_w, self.h3_b = deconv_bn_relu_layer(a2, [self.batch_size, s2, self.gf_dim*1], self.gbn[3], name='g_h3', with_w=True)
+#        a3, self.h3, self.h3_w, self.h3_b = deconv_bn_relu_layer(a2, [self.batch_size, s2, self.gf_dim*1], self.gbn[3], name='g_h3', with_w=True)
 #        h3, self.h3_w, self.h3_b = deconv1d(h2,
 #            [self.batch_size, s2, self.gf_dim*1], name='g_h3', with_w=True)
 #        h3 = tf.nn.relu(self.gbn[3](h3))
 
-        h4, self.h4_w, self.h4_b = deconv1d(a3,
+        h4, h4_w, h4_b = deconv1d(a,
             [self.batch_size, s, self.c_dim], name='g_h4', with_w=True)
+        self.H.append(h4)
+        self.H_W.append(h4_w)
+        self.H_B.append(h4_b)
+#        h4, self.h4_w, self.h4_b = deconv1d(a3,
+#            [self.batch_size, s, self.c_dim], name='g_h4', with_w=True)
 
         return tf.nn.tanh(h4)
 
@@ -383,28 +404,40 @@ class DCGAN(object):
         tf.get_variable_scope().reuse_variables()
 
         s = self.output_length
-        s2, s4, s8, s16 = int(s/2), int(s/4), int(s/8), int(s/16)
+        # have to manually set this dimension to match stride value
+        sl = [int(s/2), int(s/4), int(s/8), int(s/16)]
+#        s2, s4, s8, s16 = int(s/2), int(s/4), int(s/8), int(s/16)
 
-        h0 = tf.reshape(linear(z, self.gf_dim*8*s16, 'g_h0_lin'),
-                        [-1, s16, self.gf_dim * 8])
-        a0 = tf.nn.relu(self.gbn[0](h0, train=False))
-        a0 = tf.convert_to_tensor(a0, dtype=tf.float32)
+        h0 = tf.reshape(linear(z, self.gf_dim*8*sl[-1], 'g_h0_lin'),
+                        [-1, sl[-1], self.gf_dim * 8])
+        a = tf.nn.relu(self.gbn[0](h0, train=False))
 
-        a1, _ = deconv_bn_relu_layer(a0, [self.batch_size, s8, self.gf_dim*4], self.gbn[1], name='g_h1', is_train=False)
+        i = 4
+        j = 1
+        k = -2
+        for l in range(self.num_g_layers):
+            var_name = 'g_h' + str(j)
+            a, _ = deconv_bn_relu_layer(a, [self.batch_size, int(sl[k]), int(self.gf_dim*i)],
+                                                    self.gbn[j], name=var_name, is_train=False)
+            i /= 2
+            j += 1
+            k -= 1
+
+#        a1, _ = deconv_bn_relu_layer(a0, [self.batch_size, s8, self.gf_dim*4], self.gbn[1], name='g_h1', is_train=False)
 #        h1 = deconv1d(h0, [self.batch_size, s8, self.gf_dim*4], name='g_h1')
 #        h1 = tf.nn.relu(self.gbn[1](h1, train=False))
 
-        a2, _ = deconv_bn_relu_layer(a1, [self.batch_size, s4, self.gf_dim*2], self.gbn[2], name='g_h2', is_train=False)
+#        a2, _ = deconv_bn_relu_layer(a1, [self.batch_size, s4, self.gf_dim*2], self.gbn[2], name='g_h2', is_train=False)
 #        h2 = deconv1d(h1, [self.batch_size, s4, self.gf_dim*2], name='g_h2')
 #        h2 = tf.nn.relu(self.gbn[2](h2, train=False))
 
-        a3, _ = deconv_bn_relu_layer(a2, [self.batch_size, s2, self.gf_dim*1], self.gbn[3], name='g_h3', is_train=False)
+#        a3, _ = deconv_bn_relu_layer(a2, [self.batch_size, s2, self.gf_dim*1], self.gbn[3], name='g_h3', is_train=False)
 #        h3 = deconv1d(h2, [self.batch_size, s2, self.gf_dim*1], name='g_h3')
 #        h3 = tf.nn.relu(self.gbn[3](h3, train=False))
 
-        h4 = deconv1d(a3, [self.batch_size, s, self.c_dim], name='g_h4')
+        h = deconv1d(a, [self.batch_size, s, self.c_dim], name='g_h4')
 
-        return tf.nn.tanh(h4)
+        return tf.nn.tanh(h)
 
     #G
     def load_wav(self, coord):
