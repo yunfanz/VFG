@@ -15,7 +15,8 @@ class DCGAN(object):
                  batch_size=1, sample_length=1024,
                  y_dim=None, z_dim=100, gf_dim=64, df_dim=64, run_g=2,
                  gfc_dim=1024, dfc_dim=1024, c_dim=1, dataset_name='default', data_dir=None,
-                 audio_params=None, checkpoint_dir=None, out_dir=None, use_disc=False, use_fourier=True):
+                 audio_params=None, checkpoint_dir=None, out_dir=None, use_disc=False, use_fourier=True,
+                 num_d_layers=3, num_g_layers=3):
         """
 
         Args:
@@ -41,22 +42,34 @@ class DCGAN(object):
         self.z_dim = z_dim
         self.run_g = run_g
         self.c_dim = c_dim
+        self.num_d_layers = num_d_layers
+        self.num_g_layers = num_g_layers
 
         # batch normalization : deals with poor initialization helps gradient flow
-        self.d_bn1 = batch_norm(name='d_bn1')
-        self.d_bn2 = batch_norm(name='d_bn2')
-        self.d_bn3 = batch_norm(name='d_bn3')
+        self.dbn = []
+        for n in range(1, self.num_d_layers+1):
+            var_name = 'd_bn' + str(n)
+            self.dbn.append(batch_norm(name=var_name))
+#        self.d_bn1 = batch_norm(name='d_bn1')
+#        self.d_bn2 = batch_norm(name='d_bn2')
+#        self.d_bn3 = batch_norm(name='d_bn3')
+
         if True:
             self.d_bn1f = batch_norm(name='d_bn1f')
             self.d_bn2f = batch_norm(name='d_bn2f')
             self.d_bn3f = batch_norm(name='d_bn3f')
 
-        self.g_bn0 = batch_norm(name='g_bn0')
-        self.g_bn1 = batch_norm(name='g_bn1')
-        self.g_bn2 = batch_norm(name='g_bn2')
+        self.gbn = []
+        for n in range(0, self.num_g_layers+1):
+            var_name = 'g_bn' + str(n)
+            self.gbn.append(batch_norm(name=var_name))
+#        self.g_bn0 = batch_norm(name='g_bn0')
+#        self.g_bn1 = batch_norm(name='g_bn1')
+#        self.g_bn2 = batch_norm(name='g_bn2')
 
         if not self.y_dim:
-            self.g_bn3 = batch_norm(name='g_bn3')
+            self.gbn.append(batch_norm(name='g_bn'+str(self.num_g_layers+1)))
+#            self.g_bn3 = batch_norm(name='g_bn3')
 
         self.dataset_name = dataset_name
         self.data_dir = data_dir
@@ -294,9 +307,9 @@ class DCGAN(object):
 
         h0 = lrelu(conv1d(audio_sample, self.df_dim, name='d_h0_conv'))
 #        h1 = conv_bn_lrelu_layer(h0, self.df_dim*2, self.d_bn1, name='d_h1_conv')
-        h1 = lrelu(self.d_bn1(conv1d(h0, self.df_dim*2, name='d_h1_conv')))
-        h2 = lrelu(self.d_bn2(conv1d(h1, self.df_dim*4, name='d_h2_conv')))
-        h3 = lrelu(self.d_bn3(conv1d(h2, self.df_dim*8, name='d_h3_conv')))
+        h1 = lrelu(self.dbn[0](conv1d(h0, self.df_dim*2, name='d_h1_conv')))
+        h2 = lrelu(self.dbn[1](conv1d(h1, self.df_dim*4, name='d_h2_conv')))
+        h3 = lrelu(self.dbn[2](conv1d(h2, self.df_dim*8, name='d_h3_conv')))
         if self.use_disc:
             h_disc = mb_disc_layer(tf.reshape(h3, [self.batch_size, -1]),name='mb_disc')
             h4 = linear(h_disc, 1, 'd_h3_lin')
@@ -332,21 +345,21 @@ class DCGAN(object):
         self.z_, self.h0_w, self.h0_b = linear(z, self.gf_dim*8*s16, 'g_h0_lin', with_w=True)
 
         self.h0 = tf.reshape(self.z_, [-1, s16, self.gf_dim * 8])
-        h0 = tf.nn.relu(self.g_bn0(self.h0))
+        h0 = tf.nn.relu(self.gbn[0](self.h0))
 
 #        self.h1, self.h1_w, self.h1_b = deconv_bn_relu_layer(h0, [self.batch_size, s8, self.gf_dim*4], self.g_bn1, name='g_h1', with_w=True)
 #        h1 = self.h1
         self.h1, self.h1_w, self.h1_b = deconv1d(h0, 
             [self.batch_size, s8, self.gf_dim*4], name='g_h1', with_w=True)
-        h1 = tf.nn.relu(self.g_bn1(self.h1))
+        h1 = tf.nn.relu(self.gbn[1](self.h1))
 
         h2, self.h2_w, self.h2_b = deconv1d(h1,
             [self.batch_size, s4, self.gf_dim*2], name='g_h2', with_w=True)
-        h2 = tf.nn.relu(self.g_bn2(h2))
+        h2 = tf.nn.relu(self.gbn[2](h2))
 
         h3, self.h3_w, self.h3_b = deconv1d(h2,
             [self.batch_size, s2, self.gf_dim*1], name='g_h3', with_w=True)
-        h3 = tf.nn.relu(self.g_bn3(h3))
+        h3 = tf.nn.relu(self.gbn[3](h3))
 
         h4, self.h4_w, self.h4_b = deconv1d(h3,
             [self.batch_size, s, self.c_dim], name='g_h4', with_w=True)
@@ -361,16 +374,16 @@ class DCGAN(object):
 
         h0 = tf.reshape(linear(z, self.gf_dim*8*s16, 'g_h0_lin'),
                         [-1, s16, self.gf_dim * 8])
-        h0 = tf.nn.relu(self.g_bn0(h0, train=False))
+        h0 = tf.nn.relu(self.gbn[0](h0, train=False))
 
         h1 = deconv1d(h0, [self.batch_size, s8, self.gf_dim*4], name='g_h1')
-        h1 = tf.nn.relu(self.g_bn1(h1, train=False))
+        h1 = tf.nn.relu(self.gbn[1](h1, train=False))
 
         h2 = deconv1d(h1, [self.batch_size, s4, self.gf_dim*2], name='g_h2')
-        h2 = tf.nn.relu(self.g_bn2(h2, train=False))
+        h2 = tf.nn.relu(self.gbn[2](h2, train=False))
 
         h3 = deconv1d(h2, [self.batch_size, s2, self.gf_dim*1], name='g_h3')
-        h3 = tf.nn.relu(self.g_bn3(h3, train=False))
+        h3 = tf.nn.relu(self.gbn[3](h3, train=False))
 
         h4 = deconv1d(h3, [self.batch_size, s, self.c_dim], name='g_h4')
 
