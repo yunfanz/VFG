@@ -335,81 +335,84 @@ class DCGAN(object):
 
         s = self.output_length
 
-        sh = [s//2, s//4, s//8, int(s/8/4**1), int(s/8/4**2), int(s/8/4**3), int(s/8/4**4)]
+        sh = [s//2, s//4, s//8, s//16, s//32, s//64, int(s/64/4**1), int(s/64/4**2)]
 
         # project `z` and reshape
-        self.z_, self.h0_w, self.h0_b = linear(z, self.gf_dim*64*sh[-1], 'g_h0_lin', with_w=True)
+        self.z_, self.h0_w, self.h0_b = linear(z, self.gf_dim*128*sh[-1], 'g_h0_lin', with_w=True)
 
-        self.h0 = tf.reshape(self.z_, [-1, sh[-1], self.gf_dim * 64])
+        self.h0 = tf.reshape(self.z_, [-1, sh[-1], self.gf_dim * 128])
         h0 = tf.nn.relu(self.g_bn0(self.h0))
 
         self.h1, self.h1_w, self.h1_b = deconv1d(h0, 
-            [self.batch_size, sh[-2], self.gf_dim*32], name='g_h1', with_w=True)
+            [self.batch_size, sh[-2], self.gf_dim*64], d_w=4, name='g_h1', with_w=True)
         h1 = tf.nn.relu(self.g_bn1(self.h1))
 
         h2, self.h2_w, self.h2_b = deconv1d(h1,
-            [self.batch_size, sh[-3], self.gf_dim*16], name='g_h2', with_w=True)
+            [self.batch_size, sh[-3], self.gf_dim*32], d_w=4, name='g_h2', with_w=True)
         h2 = tf.nn.relu(self.g_bn2(h2))
 
         h3, self.h3_w, self.h3_b = deconv1d(h2,
-            [self.batch_size, sh[-4], self.gf_dim*8], name='g_h3', with_w=True)
+            [self.batch_size, sh[-4], self.gf_dim*16], d_w=2, name='g_h3', with_w=True)
         h3 = tf.nn.relu(self.g_bn3(h3))
 
         h4, self.h4_w, self.h4_b = deconv1d(h3,
-            [self.batch_size, sh[-5], self.gf_dim*4], name='g_h4', with_w=True)
+            [self.batch_size, sh[-5], self.gf_dim*8], d_w=2, name='g_h4', with_w=True)
         h4 = tf.nn.relu(self.g_bn4(h4))
-
         h5, self.h5_w, self.h5_b = deconv1d(h4,
-            [self.batch_size, sh[-6], self.gf_dim*2], d_w=2, name='g_h5', with_w=True)
+            [self.batch_size, sh[-6], self.gf_dim*4], d_w=2, name='g_h5', with_w=True)
         h5 = tf.nn.relu(self.g_bn5(h5))
         h6, self.h6_w, self.h6_b = deconv1d(h5,
-            [self.batch_size, sh[-7], self.gf_dim*1], d_w=2, name='g_h6', with_w=True)
+            [self.batch_size, sh[-7], self.gf_dim*2], d_w=2, name='g_h6', with_w=True)
         h6 = tf.nn.relu(self.g_bn6(h6))
-        
         h7, self.h7_w, self.h7_b = deconv1d(h6,
-            [self.batch_size, s, self.c_dim], d_w=2, name='g_h7', with_w=True)
+            [self.batch_size, sh[-8], self.gf_dim*1], d_w=2, name='g_h7', with_w=True)
+        h7 = tf.nn.relu(self.g_bn7(h7))
+        h8, self.h8_w, self.h8_b = deconv1d(h7,
+            [self.batch_size, s, self.c_dim], d_w=2, name='g_h8', with_w=True)
 
-        return tf.nn.tanh(h7)
+        return tf.nn.tanh(h8)
 
     def sampler(self, z, y=None):
         tf.get_variable_scope().reuse_variables()
 
         s = self.output_length
-        sh = [s//2, s//4, s//8, int(s/8/4**1), int(s/8/4**2), int(s/8/4**3), int(s/8/4**4)]
+        sh = [s//2, s//4, s//8, s//16, s//32, s//64, int(s/64/4**1), int(s/64/4**2)]
 
         # project `z` and reshape
-        self.z_ = linear(z, self.gf_dim*64*sh[-1], 'g_h0_lin')
+        self.z_ = linear(z, self.gf_dim*128*sh[-1], 'g_h0_lin')
 
-        self.h0 = tf.reshape(self.z_, [-1, sh[-1], self.gf_dim * 64])
+        self.h0 = tf.reshape(self.z_, [-1, sh[-1], self.gf_dim * 128])
         h0 = tf.nn.relu(self.g_bn0(self.h0, train=False))
 
         self.h1 = deconv1d(h0, 
-            [self.batch_size, sh[-2], self.gf_dim*32], name='g_h1')
+            [self.batch_size, sh[-2], self.gf_dim*64], name='g_h1')
         h1 = tf.nn.relu(self.g_bn1(self.h1, train=False))
 
         h2 = deconv1d(h1,
-            [self.batch_size, sh[-3], self.gf_dim*16], name='g_h2')
+            [self.batch_size, sh[-3], self.gf_dim*32], name='g_h2')
         h2 = tf.nn.relu(self.g_bn2(h2, train=False))
 
         h3 = deconv1d(h2,
-            [self.batch_size, sh[-4], self.gf_dim*8], name='g_h3')
+            [self.batch_size, sh[-4], self.gf_dim*16], d_w=2, name='g_h3')
         h3 = tf.nn.relu(self.g_bn3(h3, train=False))
 
         h4 = deconv1d(h3,
-            [self.batch_size, sh[-5], self.gf_dim*4], name='g_h4')
+            [self.batch_size, sh[-5], self.gf_dim*8], d_w=2, name='g_h4')
         h4 = tf.nn.relu(self.g_bn4(h4, train=False))
 
         h5 = deconv1d(h4,
-            [self.batch_size, sh[-6], self.gf_dim*2], d_w=2, name='g_h5')
+            [self.batch_size, sh[-6], self.gf_dim*4], d_w=2, name='g_h5')
         h5 = tf.nn.relu(self.g_bn5(h5, train=False))
         h6 = deconv1d(h5,
-            [self.batch_size, sh[-7], self.gf_dim*1], d_w=2, name='g_h6')
+            [self.batch_size, sh[-7], self.gf_dim*2], d_w=2, name='g_h6')
         h6 = tf.nn.relu(self.g_bn6(h6, train=False))
 
         h7 = deconv1d(h6,
-            [self.batch_size, s, self.c_dim], d_w=2, name='g_h7')
-
-        return tf.nn.tanh(h7)
+            [self.batch_size, sh[-8], self.gf_dim*1], d_w=2, name='g_h7')
+        h7 = tf.nn.relu(self.g_bn7(h7))
+        h8 = deconv1d(h7,
+            [self.batch_size, s, self.c_dim], d_w=2, name='g_h8')
+        return tf.nn.tanh(h8)
 
         # s2, s4, s8, s16, s32 = int(s/2/2), int(s/4/4), int(s/8/8), int(s/16/16), int(s/32/32)
 
