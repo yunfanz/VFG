@@ -305,11 +305,14 @@ class DCGAN(object):
         if reuse:
             tf.get_variable_scope().reuse_variables()
 
-        h0 = lrelu(conv1d(audio_sample, self.df_dim, name='d_h0_conv'))
-#        h1 = conv_bn_lrelu_layer(h0, self.df_dim*2, self.d_bn1, name='d_h1_conv')
-        h1 = lrelu(self.dbn[0](conv1d(h0, self.df_dim*2, name='d_h1_conv')))
-        h2 = lrelu(self.dbn[1](conv1d(h1, self.df_dim*4, name='d_h2_conv')))
-        h3 = lrelu(self.dbn[2](conv1d(h2, self.df_dim*8, name='d_h3_conv')))
+        h0 = conv_bn_lrelu_layer(audio_sample, self.df_dim, name='d_h0_conv')
+#        h0 = lrelu(conv1d(audio_sample, self.df_dim, name='d_h0_conv'))
+        h1 = conv_bn_lrelu_layer(h0, self.df_dim*2, self.dbn[0], name='d_h1_conv')
+#        h1 = lrelu(self.dbn[0](conv1d(h0, self.df_dim*2, name='d_h1_conv')))
+        h2 = conv_bn_lrelu_layer(h1, self.df_dim*4, self.dbn[1], name='d_h2_conv')
+#        h2 = lrelu(self.dbn[1](conv1d(h1, self.df_dim*4, name='d_h2_conv')))
+        h3 = conv_bn_lrelu_layer(h2, self.df_dim*8, self.dbn[2], name='d_h3_conv')
+#        h3 = lrelu(self.dbn[2](conv1d(h2, self.df_dim*8, name='d_h3_conv')))
         if self.use_disc:
             h_disc = mb_disc_layer(tf.reshape(h3, [self.batch_size, -1]),name='mb_disc')
             h4 = linear(h_disc, 1, 'd_h3_lin')
