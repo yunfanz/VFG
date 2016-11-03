@@ -336,7 +336,7 @@ class DCGAN(object):
 
         s = self.output_length
 
-        sh = [s//2, s//4, s//8, s//16, s//32, s//64, int(s/64/4**1), int(s/64/4**2)]
+        sh = [s//2, s//4, s//8, s//16, s//32, int(s/32/4**1), int(s/32/4**2), int(s/32/4**3)]
 
         # project `z` and reshape
         self.z_, self.h0_w, self.h0_b = linear(z, self.gf_dim*128*sh[-1], 'g_h0_lin', with_w=True)
@@ -353,7 +353,7 @@ class DCGAN(object):
         h2 = tf.nn.relu(self.g_bn2(h2))
 
         h3, self.h3_w, self.h3_b = deconv1d(h2,
-            [self.batch_size, sh[-4], self.gf_dim*16], d_w=2, name='g_h3', with_w=True)
+            [self.batch_size, sh[-4], self.gf_dim*16], d_w=4, name='g_h3', with_w=True)
         h3 = tf.nn.relu(self.g_bn3(h3))
 
         h4, self.h4_w, self.h4_b = deconv1d(h3,
@@ -377,7 +377,7 @@ class DCGAN(object):
         tf.get_variable_scope().reuse_variables()
 
         s = self.output_length
-        sh = [s//2, s//4, s//8, s//16, s//32, s//64, int(s/64/4**1), int(s/64/4**2)]
+        sh = [s//2, s//4, s//8, s//16, s//32, int(s/32/4**1), int(s/32/4**2), int(s/32/4**3)]
 
         # project `z` and reshape
         self.z_ = linear(z, self.gf_dim*128*sh[-1], 'g_h0_lin')
@@ -394,7 +394,7 @@ class DCGAN(object):
         h2 = tf.nn.relu(self.g_bn2(h2, train=False))
 
         h3 = deconv1d(h2,
-            [self.batch_size, sh[-4], self.gf_dim*16], d_w=2, name='g_h3')
+            [self.batch_size, sh[-4], self.gf_dim*16], d_w=4, name='g_h3')
         h3 = tf.nn.relu(self.g_bn3(h3, train=False))
 
         h4 = deconv1d(h3,
