@@ -47,35 +47,26 @@ class DCGAN(object):
         self.num_d_layers = num_d_layers
         self.num_g_layers = num_g_layers
 
-        # batch normalization : deals with poor initialization helps gradient flow
+        ### Batch Normalization Layer Initialization
         self.dbn = []
         for n in range(1, self.num_d_layers+1):
             var_name = 'd_bn' + str(n)
             self.dbn.append(batch_norm(name=var_name))
-#        self.d_bn1 = batch_norm(name='d_bn1')
-#        self.d_bn2 = batch_norm(name='d_bn2')
-#        self.d_bn3 = batch_norm(name='d_bn3')
 
         if use_fourier:
             self.dbnf = []
             for n in range(1, self.num_d_layers+1):
                 var_name = 'd_bn' + str(n) + 'f'
                 self.dbnf.append(batch_norm(name=var_name))
-#            self.d_bn1f = batch_norm(name='d_bn1f')
-#            self.d_bn2f = batch_norm(name='d_bn2f')
-#            self.d_bn3f = batch_norm(name='d_bn3f')
 
         self.gbn = []
         for n in range(0, self.num_g_layers+1):
             var_name = 'g_bn' + str(n)
             self.gbn.append(batch_norm(name=var_name))
-#        self.g_bn0 = batch_norm(name='g_bn0')
-#        self.g_bn1 = batch_norm(name='g_bn1')
-#        self.g_bn2 = batch_norm(name='g_bn2')
 
         if not self.y_dim:
             self.gbn.append(batch_norm(name='g_bn'+str(self.num_g_layers+1)))
-#            self.g_bn3 = batch_norm(name='g_bn3')
+        ###
 
         self.dataset_name = dataset_name
         self.data_dir = data_dir
@@ -311,51 +302,43 @@ class DCGAN(object):
         if reuse:
             tf.get_variable_scope().reuse_variables()
         
-#        h = conv_bn_lrelu_layer(audio_sample, self.df_dim, name='d_h0_conv')
+        #Activations over output space
         i = 2
-
         for l in range(0, self.num_d_layers+1):
-            var_name = 'd_h' + str(l) + '_conv'
+            layer_name = 'd_h' + str(l) + '_conv'
             if l == 0:
-                h = conv_bn_lrelu_layer(audio_sample, self.df_dim, name=var_name)
+                h = conv_bn_lrelu_layer(audio_sample, self.df_dim, name=layer_name)
             else:
-                h = conv_bn_lrelu_layer(h, self.df_dim*i, self.dbn[l-1], name=var_name)
+                h = conv_bn_lrelu_layer(h, self.df_dim*i, self.dbn[l-1], name=layer_name)
             i *= 2
-#        h0 = lrelu(conv1d(audio_sample, self.df_dim, name='d_h0_conv'))
-#        h1 = conv_bn_lrelu_layer(h0, self.df_dim*2, self.dbn[0], name='d_h1_conv')
-#        h1 = lrelu(self.dbn[0](conv1d(h0, self.df_dim*2, name='d_h1_conv')))
-#        h2 = conv_bn_lrelu_layer(h1, self.df_dim*4, self.dbn[1], name='d_h2_conv')
-#        h2 = lrelu(self.dbn[1](conv1d(h1, self.df_dim*4, name='d_h2_conv')))
-#        h3 = conv_bn_lrelu_layer(h2, self.df_dim*8, self.dbn[2], name='d_h3_conv')
-#        h3 = lrelu(self.dbn[2](conv1d(h2, self.df_dim*8, name='d_h3_conv')))
+
+        layer_name = 'd_h' + str(self.num_d_layers+1) + 'lin'
         if self.use_disc:
             h_disc = mb_disc_layer(tf.reshape(h, [self.batch_size, -1]),name='mb_disc')
-            h = linear(h_disc, 1, 'd_h3_lin')
+            h = linear(h_disc, 1, layer_name)
         else:
-            h = linear(tf.reshape(h, [self.batch_size, -1]), 1, 'd_h3_lin')
+            h = linear(tf.reshape(h, [self.batch_size, -1]), 1, layer_name)
 
+        #Activations over fourier space
         if include_fourier:
             fourier_sample = get_fourier(audio_sample)
-#            h_f = conv_bn_lrelu_layer(fourier_sample, self.df_dim, name='d_h0_f_conv')
-#            h0_f = lrelu(conv1d(fourier_sample, self.df_dim, name='d_h0_f_conv'))
-            i = 2
 
+            i = 2
             for l in range(0, self.num_d_layers+1):
-                var_name = 'd_h' + str(l) + '_f_conv'
+                layer_name = 'd_h' + str(l) + '_f_conv'
                 if l == 0:
-                    h_f = conv_bn_lrelu_layer(fourier_sample, self.df_dim, name=var_name)
+                    h_f = conv_bn_lrelu_layer(fourier_sample, self.df_dim, name=layer_name)
                 else:
-                    h_f = conv_bn_lrelu_layer(h_f, self.df_dim*i, self.dbn[l-1], name=var_name)
+                    h_f = conv_bn_lrelu_layer(h_f, self.df_dim*i, self.dbn[l-1], name=layer_name)
                 i *= 2
-#            h1_f = lrelu(self.d_bn1f(conv1d(h0_f, self.df_dim*2, name='d_h1_f_conv')))
-#            h2_f = lrelu(self.d_bn2f(conv1d(h1_f, self.df_dim*4, name='d_h2_f_conv')))
-#            h3_f = lrelu(self.d_bn3f(conv1d(h2_f, self.df_dim*8, name='d_h3_f_conv')))
             #import IPython; IPython.embed()
+
+            layer_name = 'd_h' + str(self.num_d_layers+1) + 'lin'
             if self.use_disc:
                 h_f_disc = mb_disc_layer(tf.reshape(h_f, [self.batch_size, -1]),name='f_mb_disc')
-                h_f = linear(h_f_disc, 1, 'd_h3_f_lin')
+                h_f = linear(h_f_disc, 1, layer_name)
             else:
-                h_f = linear(tf.reshape(h_f, [self.batch_size, -1]), 1, 'd_h3_f_lin')
+                h_f = linear(tf.reshape(h_f, [self.batch_size, -1]), 1, layer_name)
             #h5 = linear(tf.concat(1,[h4,h4_f]),1, 'd_h5')
             h = (h+h_f)/2 #average of fourier discrimination and output discrimination
 
@@ -365,11 +348,10 @@ class DCGAN(object):
 
         s = self.output_length
         # have to manually set these dimensions to ensure proper run occurs
+        # the length of the array must be one longer than self.num_g_layers
         sl = [int(s/2), int(s/4), int(s/8), int(s/16)]
         gf_sh = [8, 4, 2, 1]
         strides = [2, 2, 2, 2]
-
-        assert(len(strides) == self.num_g_layers, "Mismatch between number of strides and number of deconv layers")
 
         # project `z` and reshape
         self.z_, h0_w, h0_b = linear(z, self.gf_dim*gf_sh[0]*sl[-1], 'g_h0_lin', with_w=True)
