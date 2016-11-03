@@ -16,7 +16,7 @@ class DCGAN(object):
                  y_dim=None, z_dim=100, gf_dim=64, df_dim=64, run_g=2,
                  gfc_dim=1024, dfc_dim=1024, c_dim=1, dataset_name='default', data_dir=None,
                  audio_params=None, checkpoint_dir=None, out_dir=None, use_disc=False, use_fourier=True,
-                 num_d_layers=3, num_g_layers=3):
+                 num_d_layers=3, num_g_layers=6):
         """
 
         Args:
@@ -349,9 +349,9 @@ class DCGAN(object):
         s = self.output_length
         # have to manually set these dimensions to ensure proper run occurs
         # the length of the array must be one longer than self.num_g_layers
-        sl = [int(s/2), int(s/4), int(s/8), int(s/16)]
-        gf_sh = [8, 4, 2, 1]
-        strides = [2, 2, 2, 2]
+        sl = [int(s/2), int(s/4), int(s/8), int(s/8/4), int(s/8/4**2), int(s/8/4**3), int(s/8/4**4)]
+        gf_sh = [64, 32, 16, 8, 4, 2, 1]
+        strides = [4, 4, 4, 4, 2, 2, 2]
 
         # project `z` and reshape
         self.z_, h0_w, h0_b = linear(z, self.gf_dim*gf_sh[0]*sl[-1], 'g_h0_lin', with_w=True)
@@ -379,9 +379,12 @@ class DCGAN(object):
         s = self.output_length
 
         # have to manually set these dimensions to ensure proper run occurs
-        sl = [int(s/2), int(s/4), int(s/8), int(s/16)]
-        gf_sh = [8, 4, 2, 1]
-        strides = [2, 2, 2, 2]
+        sl = [int(s/2), int(s/4), int(s/8), int(s/8/4), int(s/8/4**2), int(s/8/4**3), int(s/8/4**4)]
+        gf_sh = [64, 32, 16, 8, 4, 2, 1]
+        strides = [4, 4, 4, 4, 2, 2, 2]
+#        sl = [int(s/2), int(s/4), int(s/8), int(s/16)]
+#        gf_sh = [8, 4, 2, 1]
+#        strides = [2, 2, 2, 2]
 
         h0 = tf.reshape(linear(z, self.gf_dim*gf_sh[0]*sl[-1], 'g_h0_lin'),
                         [-1, sl[-1], self.gf_dim * gf_sh[0]])
