@@ -333,7 +333,7 @@ class DCGAN(object):
                 i *= 2
             #import IPython; IPython.embed()
 
-            layer_name = 'd_h' + str(self.num_d_layers+1) + 'lin'
+            layer_name = 'd_h' + str(self.num_d_layers+1) + 'f_lin'
             if self.use_disc:
                 h_f_disc = mb_disc_layer(tf.reshape(h_f, [self.batch_size, -1]),name='f_mb_disc')
                 h_f = linear(h_f_disc, 1, layer_name)
