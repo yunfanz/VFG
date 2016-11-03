@@ -292,6 +292,7 @@ class DCGAN(object):
         #G
         finally:
             if config.dataset == 'wav':
+                print('Finished, output see {}'.format(config.out_dir))
                 self.coord.request_stop()
                 self.coord.join(threads)
 
