@@ -364,28 +364,23 @@ class DCGAN(object):
     def generator(self, z, y=None):
 
         s = self.output_length
-        # have to manually set this dimension to match stride value
+        # have to manually set these dimensions to ensure proper run occurs
         sl = [int(s/2), int(s/4), int(s/8), int(s/16)]
+        gf_sh = [8, 4, 2, 1]
 #        s2, s4, s8, s16 = int(s/2), int(s/4), int(s/8), int(s/16)
 
         # project `z` and reshape
-        self.z_, h0_w, h0_b = linear(z, self.gf_dim*8*sl[-1], 'g_h0_lin', with_w=True)
-        h0 = tf.reshape(self.z_, [-1, sl[-1], self.gf_dim * 8])
+        self.z_, h0_w, h0_b = linear(z, self.gf_dim*gf_sh[0]*sl[-1], 'g_h0_lin', with_w=True)
+        h0 = tf.reshape(self.z_, [-1, sl[-1], self.gf_dim * gf_sh[0]])
         a = tf.nn.relu(self.gbn[0](h0))
         self.H, self.H_W, self.H_B = [h0], [h0_w], [h0_b]
 
-        i = 4
-        j = 1
         k = -2
         for l in range(self.num_g_layers):
-            var_name = 'g_h' + str(j)
-            a, h, h_w, h_b = deconv_bn_relu_layer(a, [self.batch_size, int(sl[k]), int(self.gf_dim*i)],
-                                                    self.gbn[j], name=var_name, with_w=True)
-            self.H.append(h)
-            self.H_W.append(h_w)
-            self.H_B.append(h_b)
-            i /= 2
-            j += 1
+            var_name = 'g_h' + str(l+1)
+            a, h, h_w, h_b = deconv_bn_relu_layer(a, [self.batch_size, int(sl[k]), int(self.gf_dim*gf_sh[l+1])],
+                                                    self.gbn[l+1], name=var_name, with_w=True)
+            self.H.append(h); self.H_W.append(h_w); self.H_B.append(h_b)
             k -= 1
 
 #        a1, self.h1, self.h1_w, self.h1_b = deconv_bn_relu_layer(a0, [self.batch_size, s8, self.gf_dim*4], self.gbn[1], name='g_h1', with_w=True)
@@ -403,37 +398,33 @@ class DCGAN(object):
 #            [self.batch_size, s2, self.gf_dim*1], name='g_h3', with_w=True)
 #        h3 = tf.nn.relu(self.gbn[3](h3))
 
-        h4, h4_w, h4_b = deconv1d(a,
-            [self.batch_size, s, self.c_dim], name='g_h4', with_w=True)
-        self.H.append(h4)
-        self.H_W.append(h4_w)
-        self.H_B.append(h4_b)
+        var_name = 'g_h'+str(self.num_g_layers+1)
+        h, h_w, h_b = deconv1d(a,
+            [self.batch_size, s, self.c_dim], name=var_name, with_w=True)
+        self.H.append(h); self.H_W.append(h_w); self.H_B.append(h_b)
 #        h4, self.h4_w, self.h4_b = deconv1d(a3,
 #            [self.batch_size, s, self.c_dim], name='g_h4', with_w=True)
 
-        return tf.nn.tanh(h4)
+        return tf.nn.tanh(h)
 
     def sampler(self, z, y=None):
         tf.get_variable_scope().reuse_variables()
 
         s = self.output_length
-        # have to manually set this dimension to match stride value
+        # have to manually set these dimensions to ensure proper run occurs
         sl = [int(s/2), int(s/4), int(s/8), int(s/16)]
+        gf_sh = [8, 4, 2, 1]
 #        s2, s4, s8, s16 = int(s/2), int(s/4), int(s/8), int(s/16)
 
-        h0 = tf.reshape(linear(z, self.gf_dim*8*sl[-1], 'g_h0_lin'),
-                        [-1, sl[-1], self.gf_dim * 8])
+        h0 = tf.reshape(linear(z, self.gf_dim*gf_sh[0]*sl[-1], 'g_h0_lin'),
+                        [-1, sl[-1], self.gf_dim * gf_sh[0]])
         a = tf.nn.relu(self.gbn[0](h0, train=False))
 
-        i = 4
-        j = 1
         k = -2
         for l in range(self.num_g_layers):
-            var_name = 'g_h' + str(j)
-            a, _ = deconv_bn_relu_layer(a, [self.batch_size, int(sl[k]), int(self.gf_dim*i)],
-                                                    self.gbn[j], name=var_name, is_train=False)
-            i /= 2
-            j += 1
+            var_name = 'g_h' + str(l+1)
+            a, _ = deconv_bn_relu_layer(a, [self.batch_size, int(sl[k]), int(self.gf_dim*gf_sh[l+1])],
+                                                    self.gbn[l+1], name=var_name, is_train=False)
             k -= 1
 
 #        a1, _ = deconv_bn_relu_layer(a0, [self.batch_size, s8, self.gf_dim*4], self.gbn[1], name='g_h1', is_train=False)
@@ -448,7 +439,8 @@ class DCGAN(object):
 #        h3 = deconv1d(h2, [self.batch_size, s2, self.gf_dim*1], name='g_h3')
 #        h3 = tf.nn.relu(self.gbn[3](h3, train=False))
 
-        h = deconv1d(a, [self.batch_size, s, self.c_dim], name='g_h4')
+        var_name = 'g_h'+str(self.num_g_layers+1)
+        h = deconv1d(a, [self.batch_size, s, self.c_dim], name=var_name)
 
         return tf.nn.tanh(h)
 
