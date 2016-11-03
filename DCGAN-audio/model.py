@@ -18,15 +18,15 @@ class DCGAN(object):
                  audio_params=None, checkpoint_dir=None, out_dir=None, use_disc=False, use_fourier=True,
                  num_d_layers=3, num_g_layers=6):
         """
-
         Args:
             sess: TensorFlow session
-            batch_size: The size of batch. Should be specified before training.
-            sample_length: (optional) The resolution in pixels of the images. [64]
+            batch_size: The size of batch. Should be specified before training. [1]
+            sample_length: (optional) The resolution in timesteps of audio fed into the model[1024]
             y_dim: (optional) Dimension of dim for y. [None]
             z_dim: (optional) Dimension of dim for Z. [100]
             gf_dim: (optional) Dimension of gen filters in first conv layer. [64]
             df_dim: (optional) Dimension of discrim filters in first conv layer. [64]
+            run_g: (optional) number of times to run the generator for each discriminator run [2]
             gfc_dim: (optional) Dimension of gen units for for fully connected layer. [1024]
             dfc_dim: (optional) Dimension of discrim units for fully connected layer. [1024]
             c_dim: (optional) Dimension of image color. For grayscale input, set to 1. [3]
@@ -240,12 +240,6 @@ class DCGAN(object):
                             _, summary_str = self.sess.run([g_optim, self.g_sum],
                                 feed_dict={ self.z: batch_z })
                             self.writer.add_summary(summary_str, counter)
-
-                        # # Run g_optim twice to make sure that d_loss does not go to zero (different from paper)
-                        # _, summary_str = self.sess.run([g_optim, self.g_sum],
-                        #     feed_dict={ self.z: batch_z })
-                        # self.writer.add_summary(summary_str, counter)
-
 
                         errD_fake = self.d_loss_fake.eval({self.z: batch_z})
                         errD_real = self.d_loss_real.eval({self.audio_samples: audio_batch})
