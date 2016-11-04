@@ -10,6 +10,9 @@ from ops import *
 from utils import *
 from postprocess import *
 
+# delete this line
+import IPython
+
 class DCGAN(object):
     def __init__(self, sess,
                  batch_size=1, sample_length=1024,
@@ -17,7 +20,7 @@ class DCGAN(object):
                  gfc_dim=1024, dfc_dim=1024, c_dim=1, dataset_name='default', data_dir=None,
                  audio_params=None, checkpoint_dir=None, out_dir=None, use_disc=False, 
                  use_fourier=True,
-                 fm_layer=None,
+                 fm_layer=None, gram=None,
                  G_num_layers=5, D_num_layers=5):
         """
 
@@ -88,6 +91,7 @@ class DCGAN(object):
         # @F: feature matching
         self.fm_layer = fm_layer
         assert type(self.fm_layer) == int
+        self.gram = gram
         self.losses = {'g': None, 'd': None}
         self.G_num_layers = G_num_layers
         self.D_num_layers = D_num_layers
@@ -120,6 +124,7 @@ class DCGAN(object):
         #     self.D_, self.D_logits = self.discriminator(self.G, self.y, reuse=True)
         # else:
         
+        # @F
         if self.fm_layer is None:
             self.G = self.generator(self.z)
             self.D, self.D_logits = \
@@ -127,37 +132,61 @@ class DCGAN(object):
             self.sampler = self.sampler(self.z)
             self.D_, self.D_logits_ = \
                 self.discriminator(self.G, reuse=True, include_fourier=self.use_fourier)
-        else: # 
+        else:
+            # note the last two arg are lists
             self.G = self.generator(self.z)
-            self.D, self.D_logits, real_feat, real_fourier_feat = \
+            self.D, self.D_logits, real_feats, real_fourier_feats = \
                 self.discriminator_fm(self.audio_samples, include_fourier=self.use_fourier)
             self.sampler = self.sampler(self.z)
-            self.D_, self.D_logits_, fake_feat, fake_fourier_feat = \
-                self.discriminator_fm(self.G, reuse=True, include_fourier=self.use_fourier)            
+            self.D_, self.D_logits_, fake_feats, fake_fourier_feats = \
+                self.discriminator_fm(self.G, reuse=True, include_fourier=self.use_fourier) 
+            real_feat = real_feats[self.fm_layer]
+            fake_feat = fake_feats[self.fm_layer]
+            real_fourier_feat = real_fourier_feats[self.fm_layer]
+            fake_fourier_feat = fake_fourier_feats[self.fm_layer]
+
+            fake_features = tf.reduce_mean(fake_feat)
+            real_features = tf.reduce_mean(real_feat)    
+            tf.add_to_collection('g_losses', tf.nn.l2_loss(real_features - fake_features))
+            
+            if self.use_fourier:
+                fake_fourier_features = tf.reduce_mean(fake_feat)
+                real_fourier_features = tf.reduce_mean(real_feat)
+                tf.add_to_collection('g_losses', 
+                    tf.nn.l2_loss(real_fourier_features - fake_fourier_features))
+        
+        if self.gram is None:
+            print("not matching gram matrix.")
+        else:
+            # matching gram matrices
+            # currently only matching one layer - fm_layer
+            print("the shape of real_feat: " + str(tf.shape(real_feat)))
+            print("the shape of fake_feat: " + str(tf.shape(fake_feat)))
+            real_feat_gram = tf.reshape(real_feat, [-1, 1]) * \
+                                tf.reshape(real_feat, [1, -1])
+            fake_feat_gram = tf.reshape(fake_feat, [-1, 1]) * \
+                                tf.reshape(fake_feat, [1, -1])
+            
+            tf.add_to_collection('g_losses', \
+                tf.nn.l2_loss(real_feat_gram - fake_feat_gram))
+
+            if self.use_fourier:
+                print("the shape of real_fourier_feat: " + str(tf.shape(real_fourier_feat)))
+                print("the shape of fake_fourier_feat: " + str(tf.shape(fake_fourier_feat)))
+                real_fourier_feat_gram = tf.reshape(real_fourier_feat, [-1, 1]) * \
+                                    tf.reshape(real_fourier_feat, [1, -1])
+                fake_fourier_feat_gram = tf.reshape(fake_fourier_feat, [-1, 1]) * \
+                                    tf.reshape(fake_fourier_feat, [1, -1])  
+                tf.add_to_collection('g_losses', \
+                    tf.nn.l2_loss(real_fourier_feat_gram - fake_fourier_feat_gram))
+                  
+        IPython.embed()
 
         #import IPython; IPython.embed()
         self.d_sum = tf.histogram_summary("d", self.D)
         self.d__sum = tf.histogram_summary("d_", self.D_)
         #G need to check sample rate
         self.G_sum = tf.audio_summary("G", self.G, sample_rate=self.audio_params['sample_rate'])
-
-        if self.fm_layer is not None:
-            fake_mean = tf.reduce_mean(self.G)
-            real_mean = tf.reduce_mean(self.audio_samples)
-            tf.add_to_collection('g_losses', tf.nn.l2_loss(real_mean - fake_mean))
-        
-            fake_features = tf.reduce_mean(fake_feat)
-            real_features = tf.reduce_mean(real_feat)    
-            tf.add_to_collection('g_losses', tf.nn.l2_loss(real_features - fake_features))
-            
-            #self.g_mean_fake_sum = tf.scalar_summary("g_mean_fake", fake_mean)
-            #self.g_mean_real_sum = tf.scalar_summary("g_mean_real", real_mean)
-
-            if self.use_fourier:
-                fake_fourier_features = tf.reduce_mean(fake_feat)
-                real_fourier_features = tf.reduce_mean(real_feat)
-                tf.add_to_collection('g_losses', 
-                    tf.nn.l2_loss(real_fourier_features - fake_fourier_features))                
 
         # maintain backward compatibility
         self.d_loss_fake = tf.reduce_mean(
@@ -179,12 +208,6 @@ class DCGAN(object):
         # add all losses up for g and d
         self.losses['g'] = tf.add_n(tf.get_collection('g_losses'), name='total_g_loss')
         self.losses['d'] = tf.add_n(tf.get_collection('d_losses'), name='total_d_loss')
-
-        #G experiments with losses
-        #self.max_like_g_loss = tf.reduce_mean(-tf.exp(self.D_logits_)/2.)
-        #self.g_loss = self.max_like_g_loss
-        #import IPython; IPython.embed()
-        #self.g_loss = self.g_loss - self.d_loss
 
         self.d_loss_real_sum = tf.scalar_summary("d_loss_real", self.d_loss_real)
         self.d_loss_fake_sum = tf.scalar_summary("d_loss_fake", self.d_loss_fake)
@@ -456,9 +479,9 @@ class DCGAN(object):
         hsf.append(h5)
 
         if include_fourier:
-            return tf.nn.sigmoid(h5), h5, hs[fm_layer], hsf[fm_layer]
+            return tf.nn.sigmoid(h5), h5, hs, hsf
         else:
-            return tf.nn.sigmoid(h5), h5, hs[fm_layer], None
+            return tf.nn.sigmoid(h5), h5, hs, None
 
     def generator(self, z, y=None):
 

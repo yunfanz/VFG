@@ -36,6 +36,7 @@ flags.DEFINE_string("audio_params", None, 'JSON file with tune-specific paramete
 flags.DEFINE_integer("fm_layer", None, "using feature matching on layer x")
 flags.DEFINE_integer("G_num_layers", 5, "number of layers of the generator")
 flags.DEFINE_integer("D_num_layers", 5, "number of layers of the discriminator")
+flags.DEFINE_integer("gram", None, "matching gram matrix in generator at layer x.")
 FLAGS = flags.FLAGS
 
 def main(_):
@@ -76,7 +77,6 @@ def main(_):
             print('Using json file from {0}'.format(FLAGS.checkpoint_dir))
             FLAGS.audio_params=FLAGS.checkpoint_dir+'/audio_params.json'
 
-
     with tf.Session(config=tf.ConfigProto(log_device_placement=False)) as sess:
         #G
         if FLAGS.dataset == 'wav':
@@ -91,7 +91,7 @@ def main(_):
                     audio_params=FLAGS.audio_params, data_dir=FLAGS.data_dir, 
                     use_disc=FLAGS.use_disc, use_fourier=FLAGS.use_fourier,
                     run_g=FLAGS.run_g, checkpoint_dir=FLAGS.checkpoint_dir, 
-                    out_dir=FLAGS.out_dir, fm_layer=FLAGS.fm_layer,
+                    out_dir=FLAGS.out_dir, fm_layer=FLAGS.fm_layer, gram=FLAGS.gram,
                     G_num_layers=FLAGS.G_num_layers, D_num_layers=FLAGS.D_num_layers)
         else:
             raise Exception('dataset not understood')
