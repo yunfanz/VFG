@@ -6,6 +6,7 @@ import tensorflow as tf
 import numpy as np
 import json
 from audio_reader import AudioReader
+from wavenet import WaveNetModel, optimizer_factory
 from ops import *
 from utils import *
 from postprocess import *
@@ -13,7 +14,7 @@ from postprocess import *
 class DCGAN(object):
     def __init__(self, sess,
                  batch_size=1, sample_length=1024,
-                 y_dim=None, z_dim=100, gf_dim=64, df_dim=64, run_g=2,
+                 y_dim=None, z_dim=100, gf_dim=64, df_dim=64, run_g=2, wavenet_params=None,
                  gfc_dim=1024, dfc_dim=1024, c_dim=1, dataset_name='default', data_dir=None,
                  audio_params=None, checkpoint_dir=None, out_dir=None, use_disc=False, use_fourier=True, mode='generate'):
         """
@@ -74,8 +75,7 @@ class DCGAN(object):
             self.df_dim = df_dim
             self.gfc_dim = gfc_dim
             self.dfc_dim = dfc_dim
-
-
+        self.wavenet_params = wavenet_params
         self.checkpoint_dir = checkpoint_dir
         self.use_disc = use_disc
         self.use_fourier = use_fourier
@@ -110,6 +110,19 @@ class DCGAN(object):
         #     self.sampler = self.sampler(self.z, self.y)
         #     self.D_, self.D_logits = self.discriminator(self.G, self.y, reuse=True)
         # else:
+        self.net = WaveNetModel(
+            batch_size=self.batch_size,
+            dilations=self.wavenet_params["dilations"],
+            filter_width=self.wavenet_params["filter_width"],
+            residual_channels=self.wavenet_params["residual_channels"],
+            dilation_channels=self.wavenet_params["dilation_channels"],
+            skip_channels=self.wavenet_params["skip_channels"],
+            quantization_channels=self.wavenet_params["quantization_channels"],
+            use_biases=self.wavenet_params["use_biases"],
+            scalar_input=self.wavenet_params["scalar_input"],
+            initial_filter_width=self.wavenet_params["initial_filter_width"],
+            histograms='False')
+
         self.G = self.generator(self.z)
         self.D, self.D_logits = self.discriminator(audio_batch, include_fourier=self.use_fourier)
 
@@ -143,7 +156,7 @@ class DCGAN(object):
         t_vars = tf.trainable_variables()
 
         self.d_vars = [var for var in t_vars if 'd_' in var.name]
-        self.g_vars = [var for var in t_vars if 'g_' in var.name]
+        self.g_vars = [var for var in t_vars if ('g_' in var.name) or ('wavenet' in var.name)]
 
         self.saver = tf.train.Saver()
 
@@ -179,7 +192,7 @@ class DCGAN(object):
         # if config.dataset == 'wav':
         #     coord = tf.train.Coordinator()
         #     reader = self.load_wav(coord)
-
+        import IPython; IPython.embed()
         d_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
                           .minimize(self.d_loss, var_list=self.d_vars)
         g_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
@@ -370,8 +383,9 @@ class DCGAN(object):
         h7 = tf.nn.relu(self.g_bn7(h7))
         h8, self.h8_w, self.h8_b = deconv1d(h7,
             [self.batch_size, s, self.c_dim], d_w=2, name='g_h8', with_w=True)
+        h_wave = tf.reshape(self.net.run(h8[0,:,0]), [self.batch_size, s,self.c_dim])
 
-        return tf.nn.tanh(h8)
+        return tf.nn.tanh(h_wave)
 
     def sampler(self, z, y=None):
         tf.get_variable_scope().reuse_variables()

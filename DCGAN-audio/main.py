@@ -29,6 +29,7 @@ flags.DEFINE_boolean("use_fourier", True, "Whether the discriminator will use Fo
 flags.DEFINE_boolean("use_disc", False, "Whether to use mini-batch discrimination on the discriminator")
 flags.DEFINE_boolean("visualize", False, "True for visualizing, False for nothing [False]")
 flags.DEFINE_string("audio_params", None, 'JSON file with tune-specific parameters.')
+flags.DEFINE_string("wavenet_params", None, 'JSON file with tune-specific parameters.')
 FLAGS = flags.FLAGS
 
 def main(_):
@@ -65,16 +66,21 @@ def main(_):
         if FLAGS.mode == 'train':
             FLAGS.audio_params='./audio_params.json'
             copyfile(FLAGS.audio_params,FLAGS.checkpoint_dir+'/audio_params.json')
+            FLAGS.wavenet_params='./wavenet_params.json'
+            copyfile(FLAGS.audio_params,FLAGS.checkpoint_dir+'/wavenet_params.json')
         else:
             print('Using json file from {0}'.format(FLAGS.checkpoint_dir))
             FLAGS.audio_params=FLAGS.checkpoint_dir+'/audio_params.json'
+            FLAGS.wavenet_params=FLAGS.checkpoint_dir+'/wavenet_params.json'
 
 
     with tf.Session(config=tf.ConfigProto(log_device_placement=False)) as sess:
         #G
         if FLAGS.dataset == 'wav':
-            with open('audio_params.json', 'r') as f:
+            with open(FLAGS.audio_params, 'r') as f:
                 audio_params = json.load(f)
+            with open(FLAGS.wavenet_params, 'r') as f:
+                wavenet_params = json.load(f)
             FLAGS.epoch = audio_params['epoch']
             FLAGS.learning_rate = audio_params['learning_rate']
             FLAGS.beta1 = audio_params['beta1']
@@ -82,7 +88,7 @@ def main(_):
             dcgan = DCGAN(sess, batch_size=FLAGS.batch_size, z_dim=audio_params['z_dim'], 
                     sample_length=FLAGS.sample_length, c_dim=1, dataset_name=FLAGS.dataset, audio_params=FLAGS.audio_params, 
                     data_dir=FLAGS.data_dir, use_disc=FLAGS.use_disc, use_fourier=FLAGS.use_fourier,
-                    run_g=FLAGS.run_g, checkpoint_dir=FLAGS.checkpoint_dir, out_dir=FLAGS.out_dir, mode=FLAGS.mode)
+                    run_g=FLAGS.run_g, checkpoint_dir=FLAGS.checkpoint_dir, out_dir=FLAGS.out_dir, mode=FLAGS.mode, wavenet_params=wavenet_params)
         else:
             raise Exception('dataset not understood')
 
