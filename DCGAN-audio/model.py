@@ -6,7 +6,7 @@ import tensorflow as tf
 import numpy as np
 import json
 from audio_reader import AudioReader
-from wavenet import WaveNetModel, optimizer_factory
+from wavenet import WaveNetModel, optimizer_factory, mu_law_encode, mu_law_decode
 from ops import *
 from utils import *
 from postprocess import *
@@ -32,7 +32,6 @@ class DCGAN(object):
             c_dim: (optional) Dimension of image color. For grayscale input, set to 1. [3]
         """
         self.sess = sess
-        self.is_grayscale = (c_dim == 1)
         self.batch_size = batch_size
         #self.sample_size = sample_size
         #self.output_length = output_length
@@ -97,7 +96,7 @@ class DCGAN(object):
             audio_batch = self.reader.dequeue(self.batch_size)
             #import IPython; IPython.embed()
 
-        self.z = tf.placeholder(tf.float32, [None, self.z_dim],
+        self.z = tf.placeholder(tf.float32, [None, self.z_dim, 1],
                                 name='z')
 
         self.z_sum = tf.histogram_summary("z", self.z)
@@ -126,7 +125,7 @@ class DCGAN(object):
         self.G = self.generator(self.z)
         self.D, self.D_logits = self.discriminator(audio_batch, include_fourier=self.use_fourier)
 
-        self.sampler = self.sampler(self.z)
+        self.sampler = tf.stop_gradient(self.sampler(self.z))
         self.D_, self.D_logits_ = self.discriminator(self.G, reuse=True, include_fourier=self.use_fourier)
 
         
@@ -192,7 +191,7 @@ class DCGAN(object):
         # if config.dataset == 'wav':
         #     coord = tf.train.Coordinator()
         #     reader = self.load_wav(coord)
-        import IPython; IPython.embed()
+        #import IPython; IPython.embed()
         d_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
                           .minimize(self.d_loss, var_list=self.d_vars)
         g_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
@@ -232,7 +231,7 @@ class DCGAN(object):
                     if config.dataset == 'wav':
                         pass
 
-                    batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim]) \
+                    batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim, 1]) \
                                 .astype(np.float32)
                     #G
                     if config.dataset == 'wav':
@@ -309,21 +308,36 @@ class DCGAN(object):
                 self.coord.request_stop()
                 self.coord.join(threads)
 
-    def discriminator(self, audio_sample, y=None, reuse=False, include_fourier=True):
+    def discriminator(self, audio_sample, y=None, reuse=False, include_fourier=False):
         if reuse:
             tf.get_variable_scope().reuse_variables()
         h4_dim = self.sample_length*self.df_dim//32
+        try: in_shape = audio_sample.get_shape()
+        except(AttributeError): in_shape = audio_sample.shape
+        if in_shape[-1] == 1:
+            input_batch = mu_law_encode(audio_sample,
+                                self.net.quantization_channels)
+            encoded = self.net._one_hot(input_batch)
+            if self.net.scalar_input:
+                input_d = tf.reshape(
+                    tf.cast(input_batch, tf.float32),
+                    [self.batch_size, -1, 1])
+            else:
+                input_d = encoded
+        else:
+            input_d = audio_sample
 
-        h0 = lrelu(conv1d(audio_sample, self.df_dim, name='d_h0_conv'))
+        h0 = lrelu(conv1d(input_d, self.df_dim, name='d_h0_conv'))
         h1 = lrelu(self.d_bn1(conv1d(h0, self.df_dim*2, name='d_h1_conv')))
         h2 = lrelu(self.d_bn2(conv1d(h1, self.df_dim*4, name='d_h2_conv')))
         h3 = lrelu(self.d_bn3(conv1d(h2, self.df_dim*8, name='d_h3_conv')))
-        #import IPython; IPython.embed()
-        if self.use_disc: #not yet supported
-            h_disc = mb_disc_layer(tf.reshape(h3, [self.batch_size, -1]),name='mb_disc')
-            h4 = linear(h_disc, 1, name='d_h3_lin')
-        else:
-            h4 = linear(tf.reshape(h3, [self.batch_size, -1]), 1, name='d_h3_lin',missing_dim=h4_dim)
+        h4 = linear(tf.reshape(h3, [self.batch_size, -1]), 1, name='d_h3_lin',missing_dim=h4_dim)
+
+        # h0_ = lrelu(conv1d(input_d_, self.df_dim, name='d_h0_conv'))
+        # h1_ = lrelu(self.d_bn1(conv1d(h0, self.df_dim*2, name='d_h1_conv')))
+        # h2_ = lrelu(self.d_bn2(conv1d(h1, self.df_dim*4, name='d_h2_conv')))
+        # h3_ = lrelu(self.d_bn3(conv1d(h2, self.df_dim*8, name='d_h3_conv')))
+        # h4_ = linear(tf.reshape(h3, [self.batch_size, -1]), 1, name='d_h3_lin',missing_dim=h4_dim)
 
         if include_fourier:
             fourier_sample = get_fourier(audio_sample)
@@ -343,113 +357,101 @@ class DCGAN(object):
             h5 = h4
             #import IPython; IPython.embed()
 
-        return tf.nn.sigmoid(h5), h5
+        return tf.nn.sigmoid(h4), h4
 
     def generator(self, z, y=None):
 
-        s = self.output_length
+    
+        h_wave = self.net.run(z)
+        return h_wave
 
-        sh = [s//2, s//4, s//8, s//16, s//32, int(s/32/4**1), int(s/32/4**2), int(s/32/4**3)]
+        #s = self.output_length
+        # sh = [s//2, s//4, s//8, s//16, s//32, int(s/32/4**1), int(s/32/4**2), int(s/32/4**3)]
 
-        # project `z` and reshape
-        self.z_, self.h0_w, self.h0_b = linear(z, self.gf_dim*128*sh[-1], 'g_h0_lin', with_w=True)
+        # # project `z` and reshape
+        # self.z_, self.h0_w, self.h0_b = linear(z, self.gf_dim*128*sh[-1], 'g_h0_lin', with_w=True)
 
-        self.h0 = tf.reshape(self.z_, [-1, sh[-1], self.gf_dim * 128])
-        h0 = tf.nn.relu(self.g_bn0(self.h0))
+        # self.h0 = tf.reshape(self.z_, [-1, sh[-1], self.gf_dim * 128])
+        # h0 = tf.nn.relu(self.g_bn0(self.h0))
 
-        self.h1, self.h1_w, self.h1_b = deconv1d(h0, 
-            [self.batch_size, sh[-2], self.gf_dim*64], d_w=4, name='g_h1', with_w=True)
-        h1 = tf.nn.relu(self.g_bn1(self.h1))
+        # self.h1, self.h1_w, self.h1_b = deconv1d(h0, 
+        #     [self.batch_size, sh[-2], self.gf_dim*64], d_w=4, name='g_h1', with_w=True)
+        # h1 = tf.nn.relu(self.g_bn1(self.h1))
 
-        h2, self.h2_w, self.h2_b = deconv1d(h1,
-            [self.batch_size, sh[-3], self.gf_dim*32], d_w=4, name='g_h2', with_w=True)
-        h2 = tf.nn.relu(self.g_bn2(h2))
+        # h2, self.h2_w, self.h2_b = deconv1d(h1,
+        #     [self.batch_size, sh[-3], self.gf_dim*32], d_w=4, name='g_h2', with_w=True)
+        # h2 = tf.nn.relu(self.g_bn2(h2))
 
-        h3, self.h3_w, self.h3_b = deconv1d(h2,
-            [self.batch_size, sh[-4], self.gf_dim*16], d_w=4, name='g_h3', with_w=True)
-        h3 = tf.nn.relu(self.g_bn3(h3))
+        # h3, self.h3_w, self.h3_b = deconv1d(h2,
+        #     [self.batch_size, sh[-4], self.gf_dim*16], d_w=4, name='g_h3', with_w=True)
+        # h3 = tf.nn.relu(self.g_bn3(h3))
 
-        h4, self.h4_w, self.h4_b = deconv1d(h3,
-            [self.batch_size, sh[-5], self.gf_dim*8], d_w=2, name='g_h4', with_w=True)
-        h4 = tf.nn.relu(self.g_bn4(h4))
-        h5, self.h5_w, self.h5_b = deconv1d(h4,
-            [self.batch_size, sh[-6], self.gf_dim*4], d_w=2, name='g_h5', with_w=True)
-        h5 = tf.nn.relu(self.g_bn5(h5))
-        h6, self.h6_w, self.h6_b = deconv1d(h5,
-            [self.batch_size, sh[-7], self.gf_dim*2], d_w=2, name='g_h6', with_w=True)
-        h6 = tf.nn.relu(self.g_bn6(h6))
-        h7, self.h7_w, self.h7_b = deconv1d(h6,
-            [self.batch_size, sh[-8], self.gf_dim*1], d_w=2, name='g_h7', with_w=True)
-        h7 = tf.nn.relu(self.g_bn7(h7))
-        h8, self.h8_w, self.h8_b = deconv1d(h7,
-            [self.batch_size, s, self.c_dim], d_w=2, name='g_h8', with_w=True)
-        h_wave = tf.reshape(self.net.run(h8[0,:,0]), [self.batch_size, s,self.c_dim])
+        # h4, self.h4_w, self.h4_b = deconv1d(h3,
+        #     [self.batch_size, sh[-5], self.gf_dim*8], d_w=2, name='g_h4', with_w=True)
+        # h4 = tf.nn.relu(self.g_bn4(h4))
+        # h5, self.h5_w, self.h5_b = deconv1d(h4,
+        #     [self.batch_size, sh[-6], self.gf_dim*4], d_w=2, name='g_h5', with_w=True)
+        # h5 = tf.nn.relu(self.g_bn5(h5))
+        # h6, self.h6_w, self.h6_b = deconv1d(h5,
+        #     [self.batch_size, sh[-7], self.gf_dim*2], d_w=2, name='g_h6', with_w=True)
+        # h6 = tf.nn.relu(self.g_bn6(h6))
+        # h7, self.h7_w, self.h7_b = deconv1d(h6,
+        #     [self.batch_size, sh[-8], self.gf_dim*1], d_w=2, name='g_h7', with_w=True)
+        # h7 = tf.nn.relu(self.g_bn7(h7))
+        # h8, self.h8_w, self.h8_b = deconv1d(h7,
+        #     [self.batch_size, s, self.c_dim], d_w=2, name='g_h8', with_w=True)
+        # h_wave = tf.reshape(self.net.run(h8[0,:,0]), [self.batch_size, s,self.c_dim])
 
         return tf.nn.tanh(h_wave)
 
     def sampler(self, z, y=None):
         tf.get_variable_scope().reuse_variables()
+        h_wave = self.net.run(z)
+        prediction = tf.argmax(h_wave, 2)
 
-        s = self.output_length
-        sh = [s//2, s//4, s//8, s//16, s//32, int(s/32/4**1), int(s/32/4**2), int(s/32/4**3)]
+        waveform = mu_law_decode(prediction, self.net.quantization_channels)
+        return waveform
 
-        # project `z` and reshape
-        self.z_ = linear(z, self.gf_dim*128*sh[-1], 'g_h0_lin')
+        # s = self.output_length
+        # sh = [s//2, s//4, s//8, s//16, s//32, int(s/32/4**1), int(s/32/4**2), int(s/32/4**3)]
 
-        self.h0 = tf.reshape(self.z_, [-1, sh[-1], self.gf_dim * 128])
-        h0 = tf.nn.relu(self.g_bn0(self.h0, train=False))
+        # # project `z` and reshape
+        # self.z_ = linear(z, self.gf_dim*128*sh[-1], 'g_h0_lin')
 
-        self.h1 = deconv1d(h0, 
-            [self.batch_size, sh[-2], self.gf_dim*64], name='g_h1')
-        h1 = tf.nn.relu(self.g_bn1(self.h1, train=False))
+        # self.h0 = tf.reshape(self.z_, [-1, sh[-1], self.gf_dim * 128])
+        # h0 = tf.nn.relu(self.g_bn0(self.h0, train=False))
 
-        h2 = deconv1d(h1,
-            [self.batch_size, sh[-3], self.gf_dim*32], name='g_h2')
-        h2 = tf.nn.relu(self.g_bn2(h2, train=False))
+        # self.h1 = deconv1d(h0, 
+        #     [self.batch_size, sh[-2], self.gf_dim*64], name='g_h1')
+        # h1 = tf.nn.relu(self.g_bn1(self.h1, train=False))
 
-        h3 = deconv1d(h2,
-            [self.batch_size, sh[-4], self.gf_dim*16], d_w=4, name='g_h3')
-        h3 = tf.nn.relu(self.g_bn3(h3, train=False))
-
-        h4 = deconv1d(h3,
-            [self.batch_size, sh[-5], self.gf_dim*8], d_w=2, name='g_h4')
-        h4 = tf.nn.relu(self.g_bn4(h4, train=False))
-
-        h5 = deconv1d(h4,
-            [self.batch_size, sh[-6], self.gf_dim*4], d_w=2, name='g_h5')
-        h5 = tf.nn.relu(self.g_bn5(h5, train=False))
-        h6 = deconv1d(h5,
-            [self.batch_size, sh[-7], self.gf_dim*2], d_w=2, name='g_h6')
-        h6 = tf.nn.relu(self.g_bn6(h6, train=False))
-
-        h7 = deconv1d(h6,
-            [self.batch_size, sh[-8], self.gf_dim*1], d_w=2, name='g_h7')
-        h7 = tf.nn.relu(self.g_bn7(h7))
-        h8 = deconv1d(h7,
-            [self.batch_size, s, self.c_dim], d_w=2, name='g_h8')
-        return tf.nn.tanh(h8)
-
-        # s2, s4, s8, s16, s32 = int(s/2/2), int(s/4/4), int(s/8/8), int(s/16/16), int(s/32/32)
-
-        # h0 = tf.reshape(linear(z, self.gf_dim*16*s32, 'g_h0_lin'),
-        #                 [-1, s32, self.gf_dim * 16])
-        # h0 = tf.nn.relu(self.g_bn0(h0, train=False))
-
-        # h1 = deconv1d(h0, [self.batch_size, s16, self.gf_dim*8], name='g_h1')
-        # h1 = tf.nn.relu(self.g_bn1(h1, train=False))
-
-        # h2 = deconv1d(h1, [self.batch_size, s8, self.gf_dim*4], name='g_h2')
+        # h2 = deconv1d(h1,
+        #     [self.batch_size, sh[-3], self.gf_dim*32], name='g_h2')
         # h2 = tf.nn.relu(self.g_bn2(h2, train=False))
 
-        # h3 = deconv1d(h2, [self.batch_size, s4, self.gf_dim*2], name='g_h3')
+        # h3 = deconv1d(h2,
+        #     [self.batch_size, sh[-4], self.gf_dim*16], d_w=4, name='g_h3')
         # h3 = tf.nn.relu(self.g_bn3(h3, train=False))
 
-        # h4 = deconv1d(h3, [self.batch_size, s2, self.gf_dim*1], name='g_h4')
+        # h4 = deconv1d(h3,
+        #     [self.batch_size, sh[-5], self.gf_dim*8], d_w=2, name='g_h4')
         # h4 = tf.nn.relu(self.g_bn4(h4, train=False))
 
-        # h5 = deconv1d(h4, [self.batch_size, s, self.c_dim], name='g_h5')
+        # h5 = deconv1d(h4,
+        #     [self.batch_size, sh[-6], self.gf_dim*4], d_w=2, name='g_h5')
+        # h5 = tf.nn.relu(self.g_bn5(h5, train=False))
+        # h6 = deconv1d(h5,
+        #     [self.batch_size, sh[-7], self.gf_dim*2], d_w=2, name='g_h6')
+        # h6 = tf.nn.relu(self.g_bn6(h6, train=False))
 
-        # return tf.nn.tanh(h5)
+        # h7 = deconv1d(h6,
+        #     [self.batch_size, sh[-8], self.gf_dim*1], d_w=2, name='g_h7')
+        # h7 = tf.nn.relu(self.g_bn7(h7))
+        # h8 = deconv1d(h7,
+        #     [self.batch_size, s, self.c_dim], d_w=2, name='g_h8')
+        # return tf.nn.tanh(h8)
+
+    
 
     #G
     def load_wav(self, coord):

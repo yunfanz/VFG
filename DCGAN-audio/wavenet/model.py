@@ -550,15 +550,16 @@ class WaveNetModel(object):
             with tf.name_scope('out'):
                 # Shift original input left by one sample, which means that
                 # each output sample has to predict the next input sample.
-                shifted = tf.slice(encoded, [0, 1, 0],
-                                   [-1, tf.shape(encoded)[1] - 1, -1])
-                shifted = tf.pad(shifted, [[0, 0], [0, 1], [0, 0]])
+                #shifted = tf.slice(encoded, [0, 1, 0],
+                #                   [-1, tf.shape(encoded)[1] - 1, -1])
+                #shifted = tf.pad(shifted, [[0, 0], [0, 1], [0, 0]])
 
-                proba = tf.reshape(raw_output, [-1, self.quantization_channels])
+                proba = tf.reshape(raw_output, [1, -1, self.quantization_channels])
+                #outputs only 1, regardless of batch size
 
-                prediction = tf.argmax(proba, 1)
+                #prediction = tf.argmax(proba, 1)
 
-                decode = mu_law_decode(prediction, self.quantization_channels)
+                #decode = mu_law_decode(prediction, self.quantization_channels)
                 #import IPython; IPython.embed()
                 
-                return decode
+                return proba
