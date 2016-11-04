@@ -12,3 +12,20 @@ Did not converge in 10000 iterations
     "gfc_dim": 1024,
     "dfc_dim": 1024
 }
+
+Did not converge in 5000 iterations, d_, d fluctuated wildly`
+Model: 4 Layer Discriminator, 7 Layer Generator, strides=[4,4,4,4,2,2,2]
+{
+	"epoch": 1,
+	"learning_rate": 0.0001,
+	"beta1": 0.5,
+    "sample_rate": 3200,
+    "silence_threshold": 0.3,
+    "z_dim": 200,
+    "sample_length": 4096,
+    "num_per_epoch":5000,
+    "gf_dim": 16, 
+    "df_dim": 16,
+    "gfc_dim": 1024,
+    "dfc_dim": 1024
+}

@@ -1,3 +1,5 @@
+all: clean download train
+	
 #remove unnecessary files. Requires admin privileges
 clean:
 	rm -f *.pyc	
