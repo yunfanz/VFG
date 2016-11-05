@@ -60,8 +60,9 @@ def spectrofy(filename, sample_rate, if_return=False):
 		return  
 	T = np.arange(SAMPLE_LENGTH)
 	shifted = np.array([audio[t:t+SAMPLE_LENGTH] for t in T])  #could be faster
-	real = np.fft.fft(shifted).real.astype(np.float16)
-	imag = np.fft.fft(shifted).imag.astype(np.float16)
+	FT = np.fft.fftshift(np.fft.fft(shifted), axes=1)
+	real = FT.real.astype(np.float16)
+	imag = FT.imag.astype(np.float16)
 
 	spectrogram = np.stack([real,imag],axis=2)
 	np.save(OUT_DIR+basename(filename), spectrogram)
