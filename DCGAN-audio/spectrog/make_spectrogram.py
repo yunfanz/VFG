@@ -3,15 +3,13 @@ import time
 from glob import glob
 import numpy as np
 import fnmatch
-from .audio_reader import AudioReader
-from ops import *
-from utils import *
+import librosa
 from joblib import Parallel, delayed
 import multiprocessing
 num_cores = multiprocessing.cpu_count()
 
-SAMPLE_RATE = 8000
-SAMPLE_LENGTH = 8192
+SAMPLE_RATE = 4000
+SAMPLE_LENGTH = 4096
 silence_threshold = 0.3
 IN_DIR = '../../../VCTK-Corpus/wav48/p225/'
 OUT_DIR = '../data/spectro/'
