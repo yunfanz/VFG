@@ -146,3 +146,17 @@ def linear(input_, output_length, scope=None, stddev=0.02, bias_start=0.0, with_
             return tf.matmul(input_, matrix) + bias, matrix, bias
         else:
             return tf.matmul(input_, matrix) + bias
+
+
+# @F
+def gram_mat(input_): 
+    """
+    return the gram matrix of input_: input_ * input_.transpose()
+    """
+    shape = input_.get_shape().as_list()
+    print("The shape is {0}".format(shape))
+    rfh, rfw, rfd = shape
+    gram = tf.matmul(tf.transpose(input_tf), input_tf)
+    print(input_.get_shape().as_list())
+    return gram
+    
