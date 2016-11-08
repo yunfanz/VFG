@@ -218,3 +218,24 @@ def conv_bn_lrelu_layer(input_, output_dim, bn_func=None, k_w=5, d_w=2, stddev=0
         conv_out = lrelu(conv)
 
         return conv_out
+
+#V
+def linear_bn_relu_layer(input_, output_length, bn_func=None, name=None, stddev=0.02, bias_start=0.0, with_w=False, missing_dim=-1):
+    shape = input_.get_shape().as_list()
+    if missing_dim < 0: missing_dim = shape[-1]
+    with tf.variable_scope(name or "Linear"):
+        matrix = tf.get_variable("Matrix", [missing_dim, output_length], tf.float32,
+                                 tf.random_normal_initializer(stddev=stddev))
+        bias = tf.get_variable("bias", [output_length],
+            initializer=tf.constant_initializer(bias_start))
+        if with_w:
+            out = tf.matmul(input_, matrix) + bias, matrix, bias
+        else:
+            out = tf.matmul(input_, matrix) + bias
+
+        if bn_func != None:
+            out = bn_func(out)
+
+        a = tf.nn.relu(out)
+
+        return conv_out
