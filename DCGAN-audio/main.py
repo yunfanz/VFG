@@ -10,7 +10,7 @@ import warnings
 from datetime import datetime
 from shutil import copyfile
 flags = tf.app.flags
-flags.DEFINE_integer("epoch", 25, "Epoch to train [25]")
+flags.DEFINE_integer("epoch", 1, "Epoch to train [25]")
 flags.DEFINE_integer("save_every", 100, "save sample outputs every [100]")
 flags.DEFINE_float("learning_rate", 0.0002, "Learning rate of for adam [0.0002]")
 flags.DEFINE_float("beta1", 0.5, "Momentum term of adam [0.5]")
@@ -82,7 +82,7 @@ def main(_):
             dcgan = DCGAN(sess, batch_size=FLAGS.batch_size, z_dim=audio_params['z_dim'], 
                     sample_length=FLAGS.sample_length, c_dim=1, dataset_name=FLAGS.dataset, audio_params=FLAGS.audio_params, 
                     data_dir=FLAGS.data_dir, use_disc=FLAGS.use_disc, use_fourier=FLAGS.use_fourier,
-                    run_g=FLAGS.run_g, checkpoint_dir=FLAGS.checkpoint_dir, out_dir=FLAGS.out_dir)
+                    run_g=FLAGS.run_g, checkpoint_dir=FLAGS.checkpoint_dir, out_dir=FLAGS.out_dir, mode=FLAGS.mode)
         else:
             raise Exception('dataset not understood')
 
