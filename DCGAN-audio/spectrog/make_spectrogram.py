@@ -49,11 +49,7 @@ def trim_silence(audio, threshold):
     # Note: indices can be an empty array, if the whole audio was silence.
     return audio[indices[0]:indices[-1]] if indices.size else audio[0:0]
 
-def despectrofy(real, imag, shift_stride=1):
-	spectrogram = np.complex(real, imag)
-	shifted = np.fft.ifftshift(np.fft.ifft(spectrogram), axes=1)
 
-	return shifted
 
 def spectrofy(filename, sample_rate, if_return=False):
 	print('Processing: ', filename)
@@ -82,6 +78,8 @@ def make_corpus_cpu(directory=IN_DIR, sample_rate=SAMPLE_RATE):
 		os.makedirs(OUT_DIR)
 	files = find_files(directory)
 	collect = Parallel(n_jobs=num_cores)(delayed(spectrofy)(fn, sample_rate) for fn in files)
+
+
 
 
 if __name__ == '__main__':
