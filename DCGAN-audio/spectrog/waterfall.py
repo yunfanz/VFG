@@ -1,6 +1,6 @@
 import numpy as n, matplotlib.pyplot as plt
 import sys, scipy
-from mpl_toolkits.basemap import Basemap
+#from mpl_toolkits.basemap import Basemap
 def data_mode(data, mode='abs'):
     if mode.startswith('phs'): data = n.angle(data)
     elif mode.startswith('lin'):
@@ -20,11 +20,11 @@ def waterfall(d, ax=None, mode='log', mx=None, drng=None, **kwargs):
     if drng is None: drng = mx - d.min()
     mn = mx - drng
     if ax:
-    	im = ax.imshow(d, vmax=mx, vmin=mn, aspect='auto', interpolation='nearest', **kwargs)
+        im = ax.imshow(d, vmax=mx, vmin=mn, aspect='auto', interpolation='nearest', **kwargs)
         ax.set_xlabel('Frequency')
         ax.set_ylabel('Time')
     else:
-    	im = plt.imshow(d, vmax=mx, vmin=mn, aspect='auto', interpolation='nearest', **kwargs)
+        im = plt.imshow(d, vmax=mx, vmin=mn, aspect='auto', interpolation='nearest', **kwargs)
         plt.xlabel('Frequency')
         plt.ylabel('Time')
     return im
