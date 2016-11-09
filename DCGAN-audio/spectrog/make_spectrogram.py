@@ -51,6 +51,12 @@ def trim_silence(audio, threshold):
     # Note: indices can be an empty array, if the whole audio was silence.
     return audio[indices[0]:indices[-1]] if indices.size else audio[0:0]
 
+def despectrofy(real, imag, shift_stride=1):
+	spectrogram = np.complex(real, imag)
+	shifted = np.fft.ifftshift(np.fft.ifft(spectrogram), axes=1)
+
+	return shifted
+
 def spectrofy(filename, sample_rate, if_return=False):
 	print('Processing: ', filename)
 	audio = load_generic_audio(filename, sample_rate)
