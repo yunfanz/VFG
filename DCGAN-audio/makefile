@@ -8,4 +8,4 @@ download:
 
 #Run model with default options
 run:
-	python main.py data_dir=./data mode='train' use_fourier=False
+	python main.py --data_dir=./data --mode='train' --use_fourier=False
