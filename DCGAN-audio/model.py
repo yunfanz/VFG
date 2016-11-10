@@ -55,7 +55,7 @@ class DCGAN(object):
         self.g_bn1 = batch_norm(name='g_bn1')
         self.g_bn2 = batch_norm(name='g_bn2')
         self.g_bn3 = batch_norm(name='g_bn3')
-#        self.g_bn4 = batch_norm(name='g_bn4')
+        self.g_bn4 = batch_norm(name='g_bn4')
 #        self.g_bn5 = batch_norm(name='g_bn5')
 #        self.g_bn6 = batch_norm(name='g_bn6')
 #        self.g_bn7 = batch_norm(name='g_bn7')
