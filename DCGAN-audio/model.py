@@ -340,20 +340,23 @@ class DCGAN(object):
         sh = [s//2, s//4, s//8, s//16]
 
         # project `z` and reshape
-        self.z_, self.h0_w, self.h0_b = linear(z, self.batch_size*s*self.c_dim, 'g_h0_lin', with_w=True)
+        self.z_, self.h0_w, self.h0_b = linear(z, self.batch_size*sh[-1]*self.c_dim, 'g_h0_lin', with_w=True)
 
         h0 = tf.nn.relu(self.g_bn0(self.z_))
 
-        self.h1, self.h1_w, self.h1_b = linear(h0, self.batch_size*s*self.c_dim, 'g_h1', with_w=True)
+        self.h1, self.h1_w, self.h1_b = linear(h0, self.batch_size*sh[-2]*self.c_dim, 'g_h1', with_w=True)
         h1 = tf.nn.relu(self.g_bn1(self.h1))
 
-        self.h2, self.h2_w, self.h2_b = linear(h1, self.batch_size*s*self.c_dim, 'g_h2', with_w=True)
+        self.h2, self.h2_w, self.h2_b = linear(h1, self.batch_size*sh[-3]*self.c_dim, 'g_h2', with_w=True)
         h2 = tf.nn.relu(self.g_bn2(self.h2))
 
-        self.h3, self.h3_w, self.h3_b = linear(h2, self.batch_size*s*self.c_dim, 'gh_3', with_w=True)
+        self.h3, self.h3_w, self.h3_b = linear(h2, self.batch_size*sh[-4]*self.c_dim, 'gh_3', with_w=True)
         h3 = tf.nn.relu(self.g_bn3(self.h3))
 
-        h4 = tf.reshape(h3, [self.batch_size, s, self.c_dim])
+        self.h4, self.h4_w, self.h4_b = linear(h3, self.batch_size*s*self.c_dim, 'gh_4', with_w=True)
+        h4 = tf.nn.relu(self.g_bn4(self.h4))
+
+        h5 = tf.reshape(h4, [self.batch_size, s, self.c_dim])
         #import IPython; IPython.embed()
 
         return tf.nn.tanh(h4)
@@ -366,20 +369,23 @@ class DCGAN(object):
         sh = [s//2, s//4, s//8, s//16]
 
         # project `z` and reshape
-        self.z_, self.h0_w, self.h0_b = linear(z, self.batch_size*s*self.c_dim, 'g_h0_lin', with_w=True)
+        self.z_, self.h0_w, self.h0_b = linear(z, self.batch_size*sh[-1]*self.c_dim, 'g_h0_lin', with_w=True)
 
         h0 = tf.nn.relu(self.g_bn0(self.z_))
 
-        self.h1, self.h1_w, self.h1_b = linear(h0, self.batch_size*s*self.c_dim, 'g_h1', with_w=True)
+        self.h1, self.h1_w, self.h1_b = linear(h0, self.batch_size*sh[-2]*self.c_dim, 'g_h1', with_w=True)
         h1 = tf.nn.relu(self.g_bn1(self.h1))
 
-        self.h2, self.h2_w, self.h2_b = linear(h1, self.batch_size*s*self.c_dim, 'g_h2', with_w=True)
+        self.h2, self.h2_w, self.h2_b = linear(h1, self.batch_size*sh[-3]*self.c_dim, 'g_h2', with_w=True)
         h2 = tf.nn.relu(self.g_bn2(self.h2))
 
-        self.h3, self.h3_w, self.h3_b = linear(h2, self.batch_size*s*self.c_dim, 'gh_3', with_w=True)
+        self.h3, self.h3_w, self.h3_b = linear(h2, self.batch_size*sh[-4]*self.c_dim, 'gh_3', with_w=True)
         h3 = tf.nn.relu(self.g_bn3(self.h3))
 
-        h4 = tf.reshape(h3, [self.batch_size, s, self.c_dim])
+        self.h4, self.h4_w, self.h4_b = linear(h3, self.batch_size*s*self.c_dim, 'gh_4', with_w=True)
+        h4 = tf.nn.relu(self.g_bn4(self.h4))
+
+        h5 = tf.reshape(h4, [self.batch_size, s, self.c_dim])
         #import IPython; IPython.embed()
 
         return tf.nn.tanh(h4)
