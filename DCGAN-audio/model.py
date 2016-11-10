@@ -359,7 +359,7 @@ class DCGAN(object):
         h5 = tf.reshape(h4, [self.batch_size, s, self.c_dim])
         #import IPython; IPython.embed()
 
-        return tf.nn.tanh(h4)
+        return tf.nn.tanh(h5)
 
     def sampler(self, z, y=None):
         tf.get_variable_scope().reuse_variables()
@@ -388,7 +388,7 @@ class DCGAN(object):
         h5 = tf.reshape(h4, [self.batch_size, s, self.c_dim])
         #import IPython; IPython.embed()
 
-        return tf.nn.tanh(h4)
+        return tf.nn.tanh(h5)
 
 
     #G
