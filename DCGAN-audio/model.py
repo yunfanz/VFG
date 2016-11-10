@@ -56,7 +56,7 @@ class DCGAN(object):
         self.g_bn2 = batch_norm(name='g_bn2')
         self.g_bn3 = batch_norm(name='g_bn3')
         self.g_bn4 = batch_norm(name='g_bn4')
-#        self.g_bn5 = batch_norm(name='g_bn5')
+        self.g_bn5 = batch_norm(name='g_bn5')
 #        self.g_bn6 = batch_norm(name='g_bn6')
 #        self.g_bn7 = batch_norm(name='g_bn7')
 
@@ -356,10 +356,13 @@ class DCGAN(object):
         self.h4, self.h4_w, self.h4_b = linear(h3, self.batch_size*s*self.c_dim, 'gh_4', with_w=True)
         h4 = tf.nn.relu(self.g_bn4(self.h4))
 
-        h5 = tf.reshape(h4, [self.batch_size, s, self.c_dim])
+        self.h5, self.h5_w, self.h5_b = linear(h4, self.batch_size*s*self.c_dim, 'gh_5', with_w=True)
+        h5 = tf.nn.relu(self.g_bn5(self.h5))
+
+        h6 = tf.reshape(h5, [self.batch_size, s, self.c_dim])
         #import IPython; IPython.embed()
 
-        return tf.nn.tanh(h5)
+        return tf.nn.tanh(h6)
 
     def sampler(self, z, y=None):
         tf.get_variable_scope().reuse_variables()
@@ -385,10 +388,13 @@ class DCGAN(object):
         self.h4, self.h4_w, self.h4_b = linear(h3, self.batch_size*s*self.c_dim, 'gh_4', with_w=True)
         h4 = tf.nn.relu(self.g_bn4(self.h4))
 
-        h5 = tf.reshape(h4, [self.batch_size, s, self.c_dim])
+        self.h5, self.h5_w, self.h5_b = linear(h4, self.batch_size*s*self.c_dim, 'gh_5', with_w=True)
+        h5 = tf.nn.relu(self.g_bn5(self.h5))
+
+        h6 = tf.reshape(h5, [self.batch_size, s, self.c_dim])
         #import IPython; IPython.embed()
 
-        return tf.nn.tanh(h5)
+        return tf.nn.tanh(h6)
 
 
     #G
