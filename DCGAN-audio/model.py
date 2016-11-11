@@ -252,11 +252,15 @@ class DCGAN(object):
                                 [self.sampler, self.d_loss, self.g_loss],
                                 feed_dict={self.z: batch_z}
                             )
+                            file_str = '{:02d}_{:04d}'.format(epoch, idx)
+                            waves = despectrofy(samples)
+                            np.save(config.out_dir+'/samples/train_'+file_str, waves)
+
                             #import IPython; IPython.embed()
                         # Saving samples
-                        if config.dataset == 'wav':
+                        if False:
                             im_title = "d_loss: %.5f, g_loss: %.5f" % (d_loss, g_loss)
-                            file_str = '{:02d}_{:04d}'.format(epoch, idx)
+                            
                             save_waveform(samples,config.out_dir+'/samples/train_'+file_str, title=im_title)
                             im_sum = get_im_summary(samples, title=file_str+im_title)
                             summary_str = self.sess.run(im_sum)
