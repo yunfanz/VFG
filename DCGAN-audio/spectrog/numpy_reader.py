@@ -47,7 +47,7 @@ class NumpyReader(object):
         self.sample_placeholder = tf.placeholder(dtype=tf.float32, shape=None)
         self.queue = tf.PaddingFIFOQueue(queue_size,
                                          ['float32'],
-                                         shapes=[(None, 1)])
+                                         shapes=[(None, None, 2)])
         self.enqueue = self.queue.enqueue([self.sample_placeholder])
 
     def dequeue(self, num_elements):
