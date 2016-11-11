@@ -65,7 +65,7 @@ class NumpyReader(object):
                 if self.coord.should_stop():
                     stop = True
                     break
-                spectro = tf.cast(spectro,tf.float32)
+                #spectro = tf.cast(spectro,tf.float32)
                 sess.run(self.enqueue, feed_dict={self.sample_placeholder: spectro})
 
     def start_threads(self, sess, n_threads=1):
