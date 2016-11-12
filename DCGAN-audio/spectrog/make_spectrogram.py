@@ -5,15 +5,27 @@ import numpy as np
 import fnmatch
 import librosa
 from joblib import Parallel, delayed
+import argparse
 import multiprocessing
 num_cores = multiprocessing.cpu_count()
 
-SAMPLE_RATE = 4000
-SAMPLE_LENGTH = 4096
+SAMPLE_RATE = 8000
+SAMPLE_LENGTH = 8192
 silence_threshold = 0.3
 IN_DIR = '../../../VCTK-Corpus/wav48/'
 OUT_DIR = '../data/spectro/'
 
+parser = argparse.ArgumentParser(description='Download dataset from youtube.')
+parser.add_argument('--sar', type=int, dest=SAMPLE_RATE, default=SAMPLE_RATE,
+                        help='Rate to sample input wav files')
+parser.add_argument('--sal', type=int, dest=SAMPLE_LENGTH, default=SAMPLE_LENGTH,
+                        help='Length to sample input wav files')
+parser.add_argument('--sil', type=float, dest=silence_threshold, default=silence_threshold,
+                        help='silence threshold to sample input wav files')
+parser.add_argument('--in_dir', type=str, dest=IN_DIR, default=IN_DIR,
+                        help='directory that contains the wav files')
+parser.add_argument('--out_dir', type=str, dest=OUT_DIR, default=OUT_DIR,
+                        help='directory to put the spectrograms')
 def basename(path):
 	return os.path.splitext(os.path.basename(path))[0]
 
@@ -60,11 +72,16 @@ def spectrofy(filename, sample_rate, if_return=False):
 		return  
 	T = np.arange(SAMPLE_LENGTH)
 	shifted = np.array([audio[t:t+SAMPLE_LENGTH] for t in T])  #could be faster
-	FT = np.fft.fftshift(np.fft.fft(shifted), axes=1)
+	#FT = np.fft.fftshift(np.fft.fft(shifted), axes=1)
+	FT = np.fft.fft(shifted)
 	real = FT.real.astype(np.float16)
 	imag = FT.imag.astype(np.float16)
 
 	spectrogram = np.stack([real,imag],axis=2)
+	# sub sampling
+	spectrogram = spectrogram[::2]
+	spectrogram = spectrogram[:,:SAMPLE_LENGTH//2]
+
 	np.save(OUT_DIR+basename(filename), spectrogram)
 	#print(spectrogram.shape)
 	if if_return:

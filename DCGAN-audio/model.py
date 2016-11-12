@@ -157,11 +157,6 @@ class DCGAN(object):
 
     def train(self, config):
         """Train DCGAN"""
-        #G
-        # if config.dataset == 'wav':
-        #     coord = tf.train.Coordinator()
-        #     reader = self.load_wav(coord)
-
         d_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
                           .minimize(self.d_loss, var_list=self.d_vars)
         g_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
@@ -301,7 +296,7 @@ class DCGAN(object):
     def generator(self, z, y=None):
 
         s = self.output_length
-        sh = [s//4, s//16, s//64, s//256, s//256//2]
+        sh = [s//2, s//4, s//16, s//64, s//256]
 
         # project `z` and reshape
         self.z_, self.h0_w, self.h0_b = linear(z, self.gf_dim*16*sh[-1]*sh[-1], 'g_h0_lin', with_w=True)
@@ -310,7 +305,7 @@ class DCGAN(object):
         h0 = tf.nn.relu(self.g_bn0(self.h0))
 
         self.h1, self.h1_w, self.h1_b = deconv2d(h0, 
-            [self.batch_size, sh[-2], sh[-2],self.gf_dim*8], d_w=2, d_h=2, name='g_h1', with_w=True)
+            [self.batch_size, sh[-2], sh[-2],self.gf_dim*8], d_w=4, d_h=4, name='g_h1', with_w=True)
         h1 = tf.nn.relu(self.g_bn1(self.h1))
         h2, self.h2_w, self.h2_b = deconv2d(h1,
             [self.batch_size, sh[-3], sh[-3], self.gf_dim*4], d_w=4, d_h=4, name='g_h2', with_w=True)
@@ -319,25 +314,25 @@ class DCGAN(object):
             [self.batch_size, sh[-4], sh[-4], self.gf_dim*2], d_w=4, d_h=4, name='g_h3', with_w=True)
         h3 = tf.nn.relu(self.g_bn3(h3))
         h4, self.h4_w, self.h4_b = deconv2d(h3,
-            [self.batch_size, sh[-5], sh[-5], self.gf_dim*1], d_w=4, d_h=4, name='g_h4', with_w=True)
+            [self.batch_size, sh[-5], sh[-5], self.gf_dim*1], d_w=2, d_h=2, name='g_h4', with_w=True)
         h4 = tf.nn.relu(self.g_bn4(h4))
 
         h5, self.h5_w, self.h5_b = deconv2d(h4,
-            [self.batch_size, s, s, self.c_dim], d_w=4, d_h=4, name='g_h5', with_w=True)
+            [self.batch_size, s, s, self.c_dim], d_w=2, d_h=2, name='g_h5', with_w=True)
 
         return tf.nn.tanh(h5)
 
     def sampler(self, z, y=None):
         tf.get_variable_scope().reuse_variables()
         s = self.output_length
-        sh = [s//4, s//16, s//64, s//256, s//256//2]
+        sh = [s//2, s//4, s//16, s//64, s//256]
         self.z_ = linear(z, self.gf_dim*16*sh[-1]*sh[-1], 'g_h0_lin')
 
         self.h0 = tf.reshape(self.z_, [-1, sh[-1], sh[-1], self.gf_dim * 16])
         h0 = tf.nn.relu(self.g_bn0(self.h0))
 
         self.h1 = deconv2d(h0, 
-            [self.batch_size, sh[-2], sh[-2],self.gf_dim*8], d_w=2, d_h=2, name='g_h1')
+            [self.batch_size, sh[-2], sh[-2],self.gf_dim*8], d_w=4, d_h=4, name='g_h1')
         h1 = tf.nn.relu(self.g_bn1(self.h1))
         h2 = deconv2d(h1,
             [self.batch_size, sh[-3], sh[-3], self.gf_dim*4], d_w=4, d_h=4, name='g_h2')
@@ -346,10 +341,10 @@ class DCGAN(object):
             [self.batch_size, sh[-4], sh[-4], self.gf_dim*2], d_w=4, d_h=4, name='g_h3')
         h3 = tf.nn.relu(self.g_bn3(h3))
         h4 = deconv2d(h3,
-            [self.batch_size, sh[-5], sh[-5], self.gf_dim*1], d_w=4, d_h=4, name='g_h4')
+            [self.batch_size, sh[-5], sh[-5], self.gf_dim*1], d_w=2, d_h=2, name='g_h4')
         h4 = tf.nn.relu(self.g_bn4(h4))
 
-        h5 = deconv2d(h4, [self.batch_size, s, s, self.c_dim], d_w=4, d_h=4, name='g_h5')
+        h5 = deconv2d(h4, [self.batch_size, s, s, self.c_dim], d_w=2, d_h=2, name='g_h5')
 
         return tf.nn.tanh(h5)
 
