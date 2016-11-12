@@ -11,7 +11,7 @@ num_cores = multiprocessing.cpu_count()
 SAMPLE_RATE = 4000
 SAMPLE_LENGTH = 4096
 silence_threshold = 0.3
-IN_DIR = '../../../VCTK-Corpus/wav48/p225/'
+IN_DIR = '../../../VCTK-Corpus/wav48/'
 OUT_DIR = '../data/spectro/'
 
 def basename(path):

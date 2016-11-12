@@ -142,7 +142,7 @@ class DCGAN(object):
             samples = self.sess.run(self.sampler, feed_dict={self.z: batch_z})
             file_str = '{:03d}'.format(counter)
 
-            wave = despectrofy(samples)
+            wave = despectrofy.despectrofy(samples)
             print(wave.shape)
 
             save_waveform(wave,config.out_dir+'/'+file_str, title='')
@@ -166,7 +166,7 @@ class DCGAN(object):
                           .minimize(self.d_loss, var_list=self.d_vars)
         g_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
                           .minimize(self.g_loss, var_list=self.g_vars)
-        import IPython; IPython.embed()
+        #import IPython; IPython.embed()
         init = tf.initialize_all_variables()
         self.sess.run(init)
 
@@ -253,7 +253,8 @@ class DCGAN(object):
                                 feed_dict={self.z: batch_z}
                             )
                             file_str = '{:02d}_{:04d}'.format(epoch, idx)
-                            waves = despectrofy(samples)
+                            #waves = despectrofy.despectrofy(samples[...,0], samples[...,1])
+                            waves = samples
                             np.save(config.out_dir+'/samples/train_'+file_str, waves)
 
                             #import IPython; IPython.embed()
