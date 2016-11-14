@@ -205,9 +205,15 @@ class DCGAN(object):
                         # spectro_batch = reader.dequeue(self.batch_size) 
                         # spectro_batch = spectro_batch.eval()
                         # Update D network
-                        _, summary_str = self.sess.run([d_optim, self.d_sum],
-                            feed_dict={ self.z: batch_z })
-                        self.writer.add_summary(summary_str, counter)
+                        errD_fake = self.d_loss_fake.eval({self.z: batch_z})
+                        #errD_real = self.d_loss_real.eval({self.audio_samples: spectro_batch})
+                        errD_real = self.d_loss_real.eval()
+                        errD = errD_real+errD_fake
+                        errG = self.g_loss.eval({self.z: batch_z})
+                        #G average over batch
+                        #D_real = self.D.eval({self.audio_samples: spectro_batch}).mean()
+                        D_real = self.D.eval().mean()
+                        D_fake = self.D_.eval({self.z: batch_z}).mean()
 
                         # Update G network run_g times
                         for i in range(self.run_g):
@@ -215,20 +221,13 @@ class DCGAN(object):
                                 feed_dict={ self.z: batch_z })
                             self.writer.add_summary(summary_str, counter)
 
-                        # # Run g_optim twice to make sure that d_loss does not go to zero (different from paper)
-                        # _, summary_str = self.sess.run([g_optim, self.g_sum],
-                        #     feed_dict={ self.z: batch_z })
-                        # self.writer.add_summary(summary_str, counter)
+                        if errD > 0.45 and errG < 0.9:
+                            _, summary_str = self.sess.run([d_optim, self.d_sum],
+                                feed_dict={ self.z: batch_z })
+                            self.writer.add_summary(summary_str, counter)
 
 
-                        errD_fake = self.d_loss_fake.eval({self.z: batch_z})
-                        #errD_real = self.d_loss_real.eval({self.audio_samples: spectro_batch})
-                        errD_real = self.d_loss_real.eval()
-                        errG = self.g_loss.eval({self.z: batch_z})
-                        #G average over batch
-                        #D_real = self.D.eval({self.audio_samples: spectro_batch}).mean()
-                        D_real = self.D.eval().mean()
-                        D_fake = self.D_.eval({self.z: batch_z}).mean()
+                        
 
 
                     counter += 1
