@@ -226,9 +226,15 @@ class DCGAN(object):
                         # audio_batch = reader.dequeue(self.batch_size) 
                         # audio_batch = audio_batch.eval()
                         # Update D network
-                        _, summary_str = self.sess.run([d_optim, self.d_sum],
-                            feed_dict={ self.z: batch_z })
-                        self.writer.add_summary(summary_str, counter)
+                        errD_fake = self.d_loss_fake.eval({self.z: batch_z})
+                        #errD_real = self.d_loss_real.eval({self.audio_samples: audio_batch})
+                        errD_real = self.d_loss_real.eval()
+                        errD = errD_real + errD_fake
+                        errG = self.g_loss.eval({self.z: batch_z})
+                        #G average over batch
+                        #D_real = self.D.eval({self.audio_samples: audio_batch}).mean()
+                        D_real = self.D.eval().mean()
+                        D_fake = self.D_.eval({self.z: batch_z}).mean()
 
                         # Update G network run_g times
                         for i in range(self.run_g):
@@ -236,26 +242,17 @@ class DCGAN(object):
                                 feed_dict={ self.z: batch_z })
                             self.writer.add_summary(summary_str, counter)
 
-                        # # Run g_optim twice to make sure that d_loss does not go to zero (different from paper)
-                        # _, summary_str = self.sess.run([g_optim, self.g_sum],
-                        #     feed_dict={ self.z: batch_z })
-                        # self.writer.add_summary(summary_str, counter)
-
-
-                        errD_fake = self.d_loss_fake.eval({self.z: batch_z})
-                        #errD_real = self.d_loss_real.eval({self.audio_samples: audio_batch})
-                        errD_real = self.d_loss_real.eval()
-                        errG = self.g_loss.eval({self.z: batch_z})
-                        #G average over batch
-                        #D_real = self.D.eval({self.audio_samples: audio_batch}).mean()
-                        D_real = self.D.eval().mean()
-                        D_fake = self.D_.eval({self.z: batch_z}).mean()
+                        if errD > 0.45 and errG < 0.8:
+                            # only update discriminator if loss are within given bounds
+                            _, summary_str = self.sess.run([d_optim, self.d_sum],
+                                feed_dict={ self.z: batch_z })
+                            self.writer.add_summary(summary_str, counter)
 
 
                     counter += 1
                     print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f, D: %.3f, D_: %.3f" \
                         % (epoch+1, idx+1, batch_idxs,
-                            time.time() - start_time, errD_fake+errD_real, errG, D_real, D_fake))
+                            time.time() - start_time, errD, errG, D_real, D_fake))
 
                     if np.mod(counter, config.save_every) == 1:
                         #G
@@ -386,11 +383,11 @@ class DCGAN(object):
         h0 = tf.nn.relu(self.g_bn0(self.h0, train=False))
 
         self.h1 = deconv1d(h0, 
-            [self.batch_size, sh[-2], self.gf_dim*64], name='g_h1')
+            [self.batch_size, sh[-2], self.gf_dim*64], d_w=4, name='g_h1')
         h1 = tf.nn.relu(self.g_bn1(self.h1, train=False))
 
         h2 = deconv1d(h1,
-            [self.batch_size, sh[-3], self.gf_dim*32], name='g_h2')
+            [self.batch_size, sh[-3], self.gf_dim*32], d_w=4, name='g_h2')
         h2 = tf.nn.relu(self.g_bn2(h2, train=False))
 
         h3 = deconv1d(h2,
