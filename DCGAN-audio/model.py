@@ -79,7 +79,7 @@ class DCGAN(object):
         self.checkpoint_dir = checkpoint_dir
         self.use_disc = use_disc
         self.use_fourier = use_fourier
-        if mode == 'train': self.build_model(self.dataset_name)
+        self.build_model(self.dataset_name)
 
     def build_model(self, dataset):
         # if self.y_dim:
