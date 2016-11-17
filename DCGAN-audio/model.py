@@ -1,5 +1,5 @@
 from __future__ import division
-import os
+import os, sys
 import time
 from glob import glob
 import tensorflow as tf
@@ -394,6 +394,7 @@ class DCGAN(object):
                     print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.5f, g_loss: %.5f, v_loss: %.5f, D: %.3f, D_: %.3f, n_ops: %1d" \
                         % (epoch+1, idx+1, batch_idxs,
                             time.time() - start_time, errD, errG, errV, D_real, D_fake, n_operations))
+                    if np.mod(self.counter, config.print_every) == 1: sys.stdout.flush()
 
                     if np.mod(self.counter, config.save_every) == 1:
                         #G
