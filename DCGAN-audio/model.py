@@ -168,19 +168,12 @@ class DCGAN(object):
         self.saver = tf.train.Saver()
 
     def create_vae_loss_terms(self):
-        # The loss is composed of two terms:
-        # 1.) The reconstruction loss (the negative log probability
-        #     of the input under the reconstructed Bernoulli distribution
-        #     induced by the decoder in the data space).
-        #     This can be interpreted as the number of "nats" required
-        #     for reconstructing the input when the activation in latent
-        #     is given.
-        # Adding 1e-10 to avoid evaluatio of log(0.0)
-        #reconstr_loss = tf.Variable(tf.zeros([], dtype=np.float32), name='r_loss')
-        #latent_loss = tf.Variable(tf.zeros([], dtype=np.float32), name='l_loss')
-        self.reconstr_loss = \
-            -tf.reduce_sum(self.batch_flatten * tf.log(1e-10 + self.batch_reconstruct_flatten)
-                           + (1-self.batch_flatten) * tf.log(1e-10 + 1 - self.batch_reconstruct_flatten), 1)
+        #Bournoulli MLP, for positive data
+        #self.reconstr_loss = \
+        #    -tf.reduce_sum(self.batch_flatten * tf.log(1e-10 + self.batch_reconstruct_flatten)
+        #                   + (1-self.batch_flatten) * tf.log(1e-10 + 1 - self.batch_reconstruct_flatten), 1)
+        # L2
+        self.reconstr_loss = tf.reduce_mean(tf.square(self.batch_flatten-self.batch_reconstruct_flatten))
         # 2.) The latent loss, which is defined as the Kullback Leibler divergence
         ##    between the distribution in latent space induced by the encoder on
         #     the data and some prior. This acts as a kind of regularizer.
@@ -327,7 +320,7 @@ class DCGAN(object):
         sh = [s//2, s//4, s//8, s//16, s//32, int(s/32/4**1), int(s/32/4**2), int(s/32/4**3)]
 
         # project `z` and reshape
-        self.z_ = linear(z, self.gf_dim*128*sh[-1], 'g_h0_lin')
+        self.z_ = linear(self.z, self.gf_dim*128*sh[-1], 'g_h0_lin')
 
         self.h0 = tf.reshape(self.z_, [-1, sh[-1], self.gf_dim * 128])
         h0 = tf.nn.relu(self.g_bn0(self.h0, train=False))
