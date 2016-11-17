@@ -92,7 +92,7 @@ class DCGAN(object):
             self.batch_flatten = tf.reshape(self.audio_batch, [self.batch_size, -1])
             #import IPython; IPython.embed()
         self.x_vec = self.coordinates(self.x_dim, self.scale)
-        self.x = tf.placeholder(tf.float32, [self.batch_size, None, 1])
+        self.x = tf.placeholder(tf.float32, shape=(self.batch_size, None, 1))
 
         # Use recognition network to determine mean and
         # (log) variance of Gaussian distribution in latent
@@ -165,21 +165,24 @@ class DCGAN(object):
         #     for reconstructing the input when the activation in latent
         #     is given.
         # Adding 1e-10 to avoid evaluatio of log(0.0)
+        #reconstr_loss = tf.Variable(tf.zeros([], dtype=np.float32), name='r_loss')
+        #latent_loss = tf.Variable(tf.zeros([], dtype=np.float32), name='l_loss')
         reconstr_loss = \
             -tf.reduce_sum(self.batch_flatten * tf.log(1e-10 + self.batch_reconstruct_flatten)
-                           + (1-self.batch_flatten) * tf.log(1e-10 + 1 - self.batch_reconstruct_flatten), 1, name='r_loss')
+                           + (1-self.batch_flatten) * tf.log(1e-10 + 1 - self.batch_reconstruct_flatten), 1)
         # 2.) The latent loss, which is defined as the Kullback Leibler divergence
         ##    between the distribution in latent space induced by the encoder on
         #     the data and some prior. This acts as a kind of regularizer.
         #     This can be interpreted as the number of "nats" required
         #     for transmitting the the latent space distribution given
         #     the prior.
-        latent_loss = -0.5 * tf.reduce_sum(1 + self.z_log_sigma_sq
-                                           - tf.square(self.z_mean)
-                                           - tf.exp(self.z_log_sigma_sq), 1, name='l_loss')
-        self.vae_loss = tf.reduce_mean(reconstr_loss + latent_loss) / self.x_dim # average over batch and pixel
-        self.r_loss_sum = tf.scalar_summary("r_loss", reconstr_loss)
-        self.l_loss_sum = tf.scalar_summary("l_loss", latent_loss)
+        latent_loss = -0.5 * tf.reduce_sum(1 + self.z_log_sigma_sq - tf.square(self.z_mean)
+                                           - tf.exp(self.z_log_sigma_sq), 1)
+        self.vae_loss = tf.reduce_mean(reconstr_loss + latent_loss) / self.x_dim 
+        # average over batch and pixel
+        #import IPython; IPython.embed()
+        self.r_loss_sum = tf.scalar_summary(["r_loss"], reconstr_loss)
+        self.l_loss_sum = tf.scalar_summary(["l_loss"], latent_loss)
         self.vae_loss_sum = tf.scalar_summary("vae_loss", self.vae_loss)
 
     def create_gan_loss_terms(self):
@@ -196,6 +199,7 @@ class DCGAN(object):
     def coordinates(self, x_dim = 1024, scale = 1.0):
         x_range = scale*(np.arange(x_dim)-(x_dim-1)/2.0)/(x_dim-1)/0.5
         x_vec = np.tile(x_range.flatten(), self.batch_size).reshape(self.batch_size, x_dim, 1)
+        #import IPython; IPython.embed()
         return x_vec
 
     
@@ -318,7 +322,7 @@ class DCGAN(object):
           _, g_loss = self.sess.run((self.g_optim, self.g_loss), feed_dict={self.x: self.x_vec})
           if g_loss < 0.6: break
 
-        d_loss = self.sess.run(self.d_loss, feed_dict={self.x: self.x_vec})
+        d_loss = self.d_loss.eval({self.x: self.x_vec})
         if d_loss > 0.6 and g_loss < 0.75:
           for i in range(1):
             op_count += 1
@@ -383,13 +387,13 @@ class DCGAN(object):
                         errD, errG, errV, n_operations = self.make_step()
 
                         D_real = self.D.eval().mean()
-                        D_fake = self.D_.eval().mean()
+                        D_fake = self.D_.eval({self.x: self.x_vec}).mean()
 
 
                     self.counter += 1
-                    print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.5f, g_loss: %.5f, v_loss: %.5f, D: %.3f, D_: %.3f" \
+                    print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.5f, g_loss: %.5f, v_loss: %.5f, D: %.3f, D_: %.3f, n_ops: %1d" \
                         % (epoch+1, idx+1, batch_idxs,
-                            time.time() - start_time, errD, errG, errV, D_real, D_fake))
+                            time.time() - start_time, errD, errG, errV, D_real, D_fake, n_operations))
 
                     if np.mod(self.counter, config.save_every) == 1:
                         #G
@@ -399,8 +403,8 @@ class DCGAN(object):
                             #     feed_dict={self.z: sample_z, self.images: sample_images.eval()}
                             # )
                             samples, d_loss, g_loss = self.sess.run(
-                                [self.sampler, self.d_loss, self.g_loss],
-                                feed_dict={self.z: batch_z}
+                                [self.generator(gen_x_dim=self.x_dim, reuse=True), self.d_loss, self.g_loss],
+                                feed_dict={self.x: self.x_vec}
                             )
                             #import IPython; IPython.embed()
                         # Saving samples
@@ -416,8 +420,8 @@ class DCGAN(object):
                                 format='.wav', sample_rate=self.audio_params['sample_rate'])
                         print("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
 
-                    if np.mod(counter, 500) == 2:
-                        self.save(config.out_dir+'/checkpoint', counter)
+                    if np.mod(self.counter, 500) == 2:
+                        self.save(config.out_dir+'/checkpoint', self.counter)
         #G
         except KeyboardInterrupt:
             # Introduce a line break after ^C is displayed so save message

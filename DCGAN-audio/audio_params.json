@@ -6,7 +6,7 @@
 	"beta1": 0.5,
     "sample_rate": 4000,
     "silence_threshold": 0.3,
-    "z_dim": 100,
+    "z_dim": 50,
     "sample_length": 4096,
     "num_per_epoch":50000,
     "df_dim": 16
