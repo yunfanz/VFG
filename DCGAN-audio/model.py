@@ -167,7 +167,7 @@ class DCGAN(object):
         # Adding 1e-10 to avoid evaluatio of log(0.0)
         reconstr_loss = \
             -tf.reduce_sum(self.batch_flatten * tf.log(1e-10 + self.batch_reconstruct_flatten)
-                           + (1-self.batch_flatten) * tf.log(1e-10 + 1 - self.batch_reconstruct_flatten), 1)
+                           + (1-self.batch_flatten) * tf.log(1e-10 + 1 - self.batch_reconstruct_flatten), 1, name='r_loss')
         # 2.) The latent loss, which is defined as the Kullback Leibler divergence
         ##    between the distribution in latent space induced by the encoder on
         #     the data and some prior. This acts as a kind of regularizer.
@@ -176,7 +176,7 @@ class DCGAN(object):
         #     the prior.
         latent_loss = -0.5 * tf.reduce_sum(1 + self.z_log_sigma_sq
                                            - tf.square(self.z_mean)
-                                           - tf.exp(self.z_log_sigma_sq), 1)
+                                           - tf.exp(self.z_log_sigma_sq), 1, name='l_loss')
         self.vae_loss = tf.reduce_mean(reconstr_loss + latent_loss) / self.x_dim # average over batch and pixel
         self.r_loss_sum = tf.scalar_summary("r_loss", reconstr_loss)
         self.l_loss_sum = tf.scalar_summary("l_loss", latent_loss)
