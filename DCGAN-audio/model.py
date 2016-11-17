@@ -12,8 +12,8 @@ from postprocess import *
 
 class DCGAN(object):
     def __init__(self, sess,
-                 batch_size=1, sample_length=1024, net_size_g = 128, net_depth_g = 4, net_size_q = 512, keep_prob = 1.0,
-                 y_dim=None, z_dim=100, df_dim=24, run_g=4,
+                 batch_size=1, sample_length=1024, net_size_g = 512, net_depth_g = 6, net_size_q = 1024, keep_prob = 1.0,
+                 y_dim=None, z_dim=100, df_dim=24, run_g=4,, run_v=4, 
                  c_dim=1, dataset_name='default', model_name = "cppnvae", data_dir=None, scale = 8.0,
                  audio_params=None, checkpoint_dir=None, out_dir=None, use_disc=False, use_fourier=True, mode='generate'):
         """
@@ -330,8 +330,8 @@ class DCGAN(object):
             if d_loss < 0.6: break
         v_sumstr, g_sumstr, d_sumstr = self.sess.run((self.v_sum, self.g_sum, self.d_sum), feed_dict={self.x: self.x_vec})
         self.writer.add_summary(v_sumstr, self.counter)
-        self.writer.add_summary(v_sumstr, self.counter)
-        self.writer.add_summary(v_sumstr, self.counter)
+        self.writer.add_summary(g_sumstr, self.counter)
+        self.writer.add_summary(d_sumstr, self.counter)
 
         return d_loss, g_loss, vae_loss, op_count
 
@@ -344,6 +344,7 @@ class DCGAN(object):
 
         init = tf.initialize_all_variables()
         self.sess.run(init)
+        #import IPython; IPython.embed()
 
 
         self.g_sum = tf.merge_summary([self.z_sum, self.d__sum, 
