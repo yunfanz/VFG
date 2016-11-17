@@ -13,7 +13,7 @@ from postprocess import *
 class DCGAN(object):
     def __init__(self, sess,
                  batch_size=1, sample_length=1024, net_size_g = 512, net_depth_g = 6, net_size_q = 1024, keep_prob = 1.0,
-                 y_dim=None, z_dim=100, df_dim=24, run_g=4, run_v=4, 
+                 y_dim=None, z_dim=100, df_dim=32, gf_dim=32, run_g=4, run_v=4, 
                  c_dim=1, dataset_name='default', model_name = "cppnvae", data_dir=None, scale = 8.0,
                  audio_params=None, checkpoint_dir=None, out_dir=None, use_disc=False, use_fourier=True, mode='generate'):
         """
@@ -55,12 +55,22 @@ class DCGAN(object):
             self.d_bn2f = batch_norm(name='d_bn2f')
             self.d_bn3f = batch_norm(name='d_bn3f')
 
+        self.g_bn0 = batch_norm(name='g_bn0')
+        self.g_bn1 = batch_norm(name='g_bn1')
+        self.g_bn2 = batch_norm(name='g_bn2')
+        self.g_bn3 = batch_norm(name='g_bn3')
+        self.g_bn4 = batch_norm(name='g_bn4')
+        self.g_bn5 = batch_norm(name='g_bn5')
+        self.g_bn6 = batch_norm(name='g_bn6')
+        self.g_bn7 = batch_norm(name='g_bn7')
+
         
         self.dataset_name = dataset_name
         self.data_dir = data_dir
         if audio_params:
             self.audio_params = audio_params
             self.df_dim = self.audio_params['df_dim']
+            self.gf_dim = self.audio_params['gf_dim']
             self.learning_rate = self.audio_params['learning_rate']
             self.learning_rate_vae = self.audio_params['learning_rate_vae']
             self.learning_rate_d = self.audio_params['learning_rate_d']
@@ -138,7 +148,7 @@ class DCGAN(object):
 
         self.create_vae_loss_terms()
         self.create_gan_loss_terms()
-        self.balanced_loss = 1.0 * self.g_loss + 1.0 * self.vae_loss # can try to weight these.
+        self.balanced_loss = 1.0 * self.g_loss + 1.0 * self.reconstr_loss # can try to weight these.
 
         self.t_vars = tf.trainable_variables()
 
@@ -167,7 +177,7 @@ class DCGAN(object):
         # Adding 1e-10 to avoid evaluatio of log(0.0)
         #reconstr_loss = tf.Variable(tf.zeros([], dtype=np.float32), name='r_loss')
         #latent_loss = tf.Variable(tf.zeros([], dtype=np.float32), name='l_loss')
-        reconstr_loss = \
+        self.reconstr_loss = \
             -tf.reduce_sum(self.batch_flatten * tf.log(1e-10 + self.batch_reconstruct_flatten)
                            + (1-self.batch_flatten) * tf.log(1e-10 + 1 - self.batch_reconstruct_flatten), 1)
         # 2.) The latent loss, which is defined as the Kullback Leibler divergence
@@ -176,13 +186,13 @@ class DCGAN(object):
         #     This can be interpreted as the number of "nats" required
         #     for transmitting the the latent space distribution given
         #     the prior.
-        latent_loss = -0.5 * tf.reduce_sum(1 + self.z_log_sigma_sq - tf.square(self.z_mean)
+        self.latent_loss = -0.5 * tf.reduce_sum(1 + self.z_log_sigma_sq - tf.square(self.z_mean)
                                            - tf.exp(self.z_log_sigma_sq), 1)
-        self.vae_loss = tf.reduce_mean(reconstr_loss + latent_loss) / self.x_dim 
+        self.vae_loss = tf.reduce_mean(self.reconstr_loss + self.latent_loss) / self.x_dim 
         # average over batch and pixel
         #import IPython; IPython.embed()
-        self.r_loss_sum = tf.scalar_summary(["r_loss"], reconstr_loss)
-        self.l_loss_sum = tf.scalar_summary(["l_loss"], latent_loss)
+        self.r_loss_sum = tf.scalar_summary(["r_loss"], self.reconstr_loss)
+        self.l_loss_sum = tf.scalar_summary(["l_loss"], self.latent_loss)
         self.vae_loss_sum = tf.scalar_summary("vae_loss", self.vae_loss)
 
     def create_gan_loss_terms(self):
@@ -240,29 +250,70 @@ class DCGAN(object):
 
         return tf.nn.sigmoid(h5), h5
 
-    def generator(self, gen_x_dim = 1024, reuse = False):
+    # def generator(self, gen_x_dim = 1024, reuse = False):
 
+    #     if reuse:
+    #         tf.get_variable_scope().reuse_variables()
+
+    #     n_network = self.net_size_g
+    #     z_scaled = tf.reshape(self.z, [self.batch_size, 1, self.z_dim]) * \
+    #                     tf.ones([gen_x_dim, 1], dtype=tf.float32) * self.scale
+    #     z_unroll = tf.reshape(z_scaled, [self.batch_size*gen_x_dim, self.z_dim])
+    #     x_unroll = tf.reshape(self.x, [self.batch_size*gen_x_dim, 1])
+
+    #     U = fully_connected(z_unroll, n_network, self.model_name+'_g_0_z') + \
+    #         fully_connected(x_unroll, n_network, self.model_name+'_g_0_x', with_bias = False)
+    #     H = tf.nn.softplus(U)
+    #     for i in range(1, self.net_depth_g):
+    #         H = tf.nn.tanh(fully_connected(H, n_network, self.model_name+'_g_tanh_'+str(i)))
+
+    #     output = tf.sigmoid(fully_connected(H, self.c_dim, self.model_name+'_g_'+str(self.net_depth_g)))
+    #     result = tf.reshape(output, [self.batch_size, gen_x_dim, self.c_dim])
+
+    #     return result
+
+    def generator(self, gen_x_dim = 1024, reuse = False):
         if reuse:
             tf.get_variable_scope().reuse_variables()
 
-        n_network = self.net_size_g
-        z_scaled = tf.reshape(self.z, [self.batch_size, 1, self.z_dim]) * \
-                        tf.ones([gen_x_dim, 1], dtype=tf.float32) * self.scale
-        z_unroll = tf.reshape(z_scaled, [self.batch_size*gen_x_dim, self.z_dim])
-        x_unroll = tf.reshape(self.x, [self.batch_size*gen_x_dim, 1])
+        s = gen_x_dim
 
-        U = fully_connected(z_unroll, n_network, self.model_name+'_g_0_z') + \
-            fully_connected(x_unroll, n_network, self.model_name+'_g_0_x', with_bias = False)
-        H = tf.nn.softplus(U)
-        for i in range(1, self.net_depth_g):
-            H = tf.nn.tanh(fully_connected(H, n_network, self.model_name+'_g_tanh_'+str(i)))
+        sh = [s//2, s//4, s//8, s//16, s//32, int(s/32/4**1), int(s/32/4**2), int(s/32/4**3)]
 
-        output = tf.sigmoid(fully_connected(H, self.c_dim, self.model_name+'_g_'+str(self.net_depth_g)))
-        result = tf.reshape(output, [self.batch_size, gen_x_dim, self.c_dim])
+        # project `z` and reshape
+        self.z_, self.h0_w, self.h0_b = linear(self.z, self.gf_dim*128*sh[-1], 'g_h0_lin', with_w=True)
 
-        return result
+        self.h0 = tf.reshape(self.z_, [-1, sh[-1], self.gf_dim * 128])
+        h0 = tf.nn.relu(self.g_bn0(self.h0))
 
+        self.h1, self.h1_w, self.h1_b = deconv1d(h0, 
+            [self.batch_size, sh[-2], self.gf_dim*64], d_w=4, name='g_h1', with_w=True)
+        h1 = tf.nn.relu(self.g_bn1(self.h1))
 
+        h2, self.h2_w, self.h2_b = deconv1d(h1,
+            [self.batch_size, sh[-3], self.gf_dim*32], d_w=4, name='g_h2', with_w=True)
+        h2 = tf.nn.relu(self.g_bn2(h2))
+
+        h3, self.h3_w, self.h3_b = deconv1d(h2,
+            [self.batch_size, sh[-4], self.gf_dim*16], d_w=4, name='g_h3', with_w=True)
+        h3 = tf.nn.relu(self.g_bn3(h3))
+
+        h4, self.h4_w, self.h4_b = deconv1d(h3,
+            [self.batch_size, sh[-5], self.gf_dim*8], d_w=2, name='g_h4', with_w=True)
+        h4 = tf.nn.relu(self.g_bn4(h4))
+        h5, self.h5_w, self.h5_b = deconv1d(h4,
+            [self.batch_size, sh[-6], self.gf_dim*4], d_w=2, name='g_h5', with_w=True)
+        h5 = tf.nn.relu(self.g_bn5(h5))
+        h6, self.h6_w, self.h6_b = deconv1d(h5,
+            [self.batch_size, sh[-7], self.gf_dim*2], d_w=2, name='g_h6', with_w=True)
+        h6 = tf.nn.relu(self.g_bn6(h6))
+        h7, self.h7_w, self.h7_b = deconv1d(h6,
+            [self.batch_size, sh[-8], self.gf_dim*1], d_w=2, name='g_h7', with_w=True)
+        h7 = tf.nn.relu(self.g_bn7(h7))
+        h8, self.h8_w, self.h8_b = deconv1d(h7,
+            [self.batch_size, s, self.c_dim], d_w=2, name='g_h8', with_w=True)
+
+        return tf.nn.tanh(h8)
     # def encode(self, X):
     #   """Transform data by mapping it into the latent space."""
     #   # Note: This maps to mean of distribution, we could alternatively
@@ -313,11 +364,11 @@ class DCGAN(object):
             break
         '''
 
-        for i in range(4):
+        for i in range(self.run_v):
           op_count += 1
           _, vae_loss = self.sess.run((self.vae_optim, self.vae_loss), feed_dict={self.x: self.x_vec})
 
-        for i in range(4):
+        for i in range(self.run_g):
           op_count += 1
           _, g_loss = self.sess.run((self.g_optim, self.g_loss), feed_dict={self.x: self.x_vec})
           if g_loss < 0.6: break
