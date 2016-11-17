@@ -290,7 +290,7 @@ class DCGAN(object):
                 format='.wav', sample_rate=self.audio_params['sample_rate'])
 
 
-    def make_step(self, batch):
+    def make_step(self):
         """Train model based on mini-batch of input data.
 
         Return cost of mini-batch.
