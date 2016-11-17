@@ -43,6 +43,7 @@ class DCGAN(object):
         self.keep_prob = keep_prob
         self.y_dim = y_dim
         self.z_dim = z_dim
+        self.run_v = run_v
         self.run_g = run_g
         self.c_dim = c_dim
         self.model_name = model_name
