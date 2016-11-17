@@ -1,14 +1,13 @@
 {
 	"epoch": 1,
-	"learning_rate": 0.0001,
+	"learning_rate": 0.0005,
+    "learning_rate_vae": 0.0001,
+    "learning_rate_d": 0.0001,
 	"beta1": 0.5,
-    "sample_rate": 8000,
+    "sample_rate": 4000,
     "silence_threshold": 0.3,
     "z_dim": 100,
-    "sample_length": 16384,
+    "sample_length": 4096,
     "num_per_epoch":50000,
-    "gf_dim": 16, 
-    "df_dim": 16,
-    "gfc_dim": 1024,
-    "dfc_dim": 1024
+    "df_dim": 16
 }
