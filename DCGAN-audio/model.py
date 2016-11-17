@@ -13,7 +13,7 @@ from postprocess import *
 class DCGAN(object):
     def __init__(self, sess,
                  batch_size=1, sample_length=1024, net_size_g = 512, net_depth_g = 6, net_size_q = 1024, keep_prob = 1.0,
-                 y_dim=None, z_dim=100, df_dim=24, run_g=4,, run_v=4, 
+                 y_dim=None, z_dim=100, df_dim=24, run_g=4, run_v=4, 
                  c_dim=1, dataset_name='default', model_name = "cppnvae", data_dir=None, scale = 8.0,
                  audio_params=None, checkpoint_dir=None, out_dir=None, use_disc=False, use_fourier=True, mode='generate'):
         """
