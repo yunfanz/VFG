@@ -185,7 +185,7 @@ class DCGAN(object):
         self.vae_loss = tf.reduce_mean(self.reconstr_loss + self.latent_loss) / self.x_dim 
         # average over batch and pixel
         #import IPython; IPython.embed()
-        self.r_loss_sum = tf.scalar_summary(["r_loss"], self.reconstr_loss)
+        self.r_loss_sum = tf.scalar_summary("r_loss", self.reconstr_loss)
         self.l_loss_sum = tf.scalar_summary(["l_loss"], self.latent_loss)
         self.vae_loss_sum = tf.scalar_summary("vae_loss", self.vae_loss)
 
