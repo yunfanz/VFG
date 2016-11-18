@@ -1,12 +1,8 @@
 {
-	"audio-format": "mp3",
+    "quiet": true,
+    "audioformat": "wav",
     "format": "bestaudio/best",
     "extractaudio": true,
-    "noplaylist": false,
-    "outtmpl": "%(id)s.%(ext)s",
-    "postprocessors": [{
-    	"key": "FFmpegExtractAudio",
-        "preferredcodec": "mp3",
-        "preferredquality": "192"
-    }]
+    "noplaylist": true,
+    "outtmpl": "%(id)s"
 }
