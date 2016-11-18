@@ -6,7 +6,8 @@ import tensorflow as tf
 import numpy as np
 import json
 from audio_reader import AudioReader
-from ops import *
+#@F: changed this
+from ops2 import *
 from utils import *
 from postprocess import *
 
@@ -90,7 +91,7 @@ class DCGAN(object):
 
 		# @F: feature matching
 		self.fm_layer = fm_layer
-		assert ((self.fm_layer is None) or (type(self.fm_layer) == int))
+		# assert ((self.fm_layer is None) or (type(self.fm_layer) == int))
 		self.gram = gram
 		self.losses = {'g': None, 'd': None}
 		self.G_num_layers = G_num_layers
@@ -141,10 +142,6 @@ class DCGAN(object):
 			self.D_, self.D_logits_, fake_feats, fake_fourier_feats = \
 				self.discriminator_fm(self.G, reuse=True, include_fourier=self.use_fourier) 
 
-			print(real_feats)
-			print(fake_feats)
-			print(real_fourier_feats)
-			print(fake_fourier_feats)
 			real_feat = real_feats[self.fm_layer]
 			fake_feat = fake_feats[self.fm_layer]
 			real_fourier_feat = real_fourier_feats[self.fm_layer]
@@ -168,8 +165,8 @@ class DCGAN(object):
 		else:
 			# matching gram matrices
 			# currently only matching one layer - fm_layer
-			print("the shape of real_feat: " + str(tf.shape(real_feat)))
-			print("the shape of fake_feat: " + str(tf.shape(fake_feat)))
+			# print("the shape of real_feat: " + str(tf.shape(real_feat)))
+			# print("the shape of fake_feat: " + str(tf.shape(fake_feat)))
 			real_feat_gram = gram_mat(real_feat)
 			fake_feat_gram = gram_mat(fake_feat)
 			self.g_gram_loss = tf.nn.l2_loss(real_feat_gram - fake_feat_gram)
