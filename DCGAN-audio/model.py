@@ -191,10 +191,10 @@ class DCGAN(object):
 
     def create_gan_loss_terms(self):
         # Define loss function and optimiser
-        self.d_loss_real = binary_cross_entropy_with_logits(tf.ones_like(self.D), self.D_)
-        self.d_loss_fake = binary_cross_entropy_with_logits(tf.zeros_like(self.D_), self.D_)
-        self.d_loss = 1.0*(self.d_loss_real + self.d_loss_fake)/ 2.0
-        self.g_loss = 1.0*binary_cross_entropy_with_logits(tf.ones_like(self.D_), self.D_)
+        self.d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(tf.ones_like(self.D), self.D_logits))
+        self.d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(tf.zeros_like(self.D_), self.D_logits_))
+        self.d_loss = 1.0*(self.d_loss_real + self.d_loss_fake)/2.
+        self.g_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(tf.ones_like(self.D_), self.D_logits_))
         self.d_loss_real_sum = tf.scalar_summary("d_loss_real", self.d_loss_real)
         self.d_loss_fake_sum = tf.scalar_summary("d_loss_fake", self.d_loss_fake)
         self.g_loss_sum = tf.scalar_summary("g_loss", self.g_loss)
@@ -308,11 +308,13 @@ class DCGAN(object):
             [self.batch_size, s, self.c_dim], d_w=2, name='g_h8', with_w=True)
 
         return tf.nn.tanh(h8)
-    # def encode(self, X):
-    #   """Transform data by mapping it into the latent space."""
-    #   # Note: This maps to mean of distribution, we could alternatively
-    #   # sample from Gaussian distribution
-    #   return self.sess.run(self.z_mean, feed_dict={self.batch: X})
+
+    def encode(self, X):
+      """Transform data by mapping it into the latent space."""
+      # Note: This maps to mean of distribution, we could alternatively
+      # sample from Gaussian distribution
+      return self.sess.run(self.z_mean, feed_dict={self.batch: X})
+
     def sampler(self, gen_x_dim = 1024):
         tf.get_variable_scope().reuse_variables()
 
