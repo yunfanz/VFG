@@ -13,8 +13,8 @@ from postprocess import *
 class DCGAN(object):
     def __init__(self, sess,
                  batch_size=1, sample_length=1024, net_size_g = 512, net_depth_g = 6, net_size_q = 1024, keep_prob = 1.0,
-                 y_dim=None, z_dim=100, df_dim=32, gf_dim=32, run_g=4, run_v=4, 
-                 c_dim=1, dataset_name='default', model_name = "cppnvae", data_dir=None, scale = 8.0,
+                 y_dim=None, z_dim=100, df_dim=32, gf_dim=32, run_g=2, run_v=2, 
+                 c_dim=1, dataset_name='default', model_name = "cppnvae", data_dir=None, 
                  audio_params=None, checkpoint_dir=None, out_dir=None, use_disc=False, use_fourier=True, mode='generate'):
         """
 
@@ -38,7 +38,7 @@ class DCGAN(object):
         self.sample_length = sample_length
         self.output_length = sample_length
         self.x_dim = sample_length
-        self.scale = scale
+        #self.scale = scale
         self.net_depth_g = net_depth_g
         self.keep_prob = keep_prob
         self.y_dim = y_dim
@@ -76,6 +76,7 @@ class DCGAN(object):
             self.learning_rate_vae = self.audio_params['learning_rate_vae']
             self.learning_rate_d = self.audio_params['learning_rate_d']
             self.beta1 = self.audio_params['beta1']
+            self.scale = self.sample_length/self.audio_params['sample_rate']
 
         else:
             self.df_dim = df_dim
@@ -156,7 +157,7 @@ class DCGAN(object):
         self.q_vars = [var for var in self.t_vars if 'q_' in var.name]
         self.g_vars = [var for var in self.t_vars if 'g_' in var.name]
         self.d_vars = [var for var in self.t_vars if 'd_' in var.name]
-        self.vae_vars = self.q_vars+self.g_vars
+        self.vae_vars = self.q_vars #+self.g_vars
 
         # Use ADAM optimizer
         self.d_optim = tf.train.AdamOptimizer(self.learning_rate_d, beta1=self.beta1) \
@@ -172,8 +173,10 @@ class DCGAN(object):
         #self.reconstr_loss = \
         #    -tf.reduce_sum(self.batch_flatten * tf.log(1e-10 + self.batch_reconstruct_flatten)
         #                   + (1-self.batch_flatten) * tf.log(1e-10 + 1 - self.batch_reconstruct_flatten), 1)
+        #Gaussian MLP
+        self.reconstr_loss = 0.5*tf.reduce_mean(tf.square(self.batch_flatten-self.batch_reconstruct_flatten)/1)
         # L2
-        self.reconstr_loss = tf.reduce_mean(tf.square(self.batch_flatten-self.batch_reconstruct_flatten))
+        #self.reconstr_loss = tf.reduce_mean(tf.square(self.batch_flatten-self.batch_reconstruct_flatten))
         # 2.) The latent loss, which is defined as the Kullback Leibler divergence
         ##    between the distribution in latent space induced by the encoder on
         #     the data and some prior. This acts as a kind of regularizer.
@@ -191,10 +194,10 @@ class DCGAN(object):
 
     def create_gan_loss_terms(self):
         # Define loss function and optimiser
-        self.d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(tf.ones_like(self.D), self.D_logits))
-        self.d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(tf.zeros_like(self.D_), self.D_logits_))
+        self.d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(self.D_logits,tf.ones_like(self.D)))
+        self.d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(self.D_logits_, tf.zeros_like(self.D_)))
         self.d_loss = 1.0*(self.d_loss_real + self.d_loss_fake)/2.
-        self.g_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(tf.ones_like(self.D_), self.D_logits_))
+        self.g_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(self.D_logits_, tf.ones_like(self.D_)))
         self.d_loss_real_sum = tf.scalar_summary("d_loss_real", self.d_loss_real)
         self.d_loss_fake_sum = tf.scalar_summary("d_loss_fake", self.d_loss_fake)
         self.g_loss_sum = tf.scalar_summary("g_loss", self.g_loss)
@@ -402,16 +405,16 @@ class DCGAN(object):
         '''
 
         for i in range(self.run_v):
-          op_count += 1
+          #op_count += 1
           _, vae_loss = self.sess.run((self.vae_optim, self.vae_loss), feed_dict={self.x: self.x_vec})
 
         for i in range(self.run_g):
-          op_count += 1
+          #op_count += 1
           _, g_loss = self.sess.run((self.g_optim, self.g_loss), feed_dict={self.x: self.x_vec})
           if g_loss < 0.6: break
 
         d_loss = self.d_loss.eval({self.x: self.x_vec})
-        if d_loss > 0.6 and g_loss < 0.75:
+        if d_loss > 0.45 and g_loss < 0.85:
           for i in range(1):
             op_count += 1
             _, d_loss = self.sess.run((self.d_optim, self.d_loss), feed_dict={self.x: self.x_vec})
