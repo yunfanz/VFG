@@ -495,8 +495,9 @@ class DCGAN(object):
                             #     [self.sampler, self.d_loss, self.g_loss],
                             #     feed_dict={self.z: sample_z, self.images: sample_images.eval()}
                             # )
+                            import IPython; IPython.embed()
                             samples, d_loss, g_loss = self.sess.run(
-                                [self.sampler(gen_x_dim=self.x_dim), self.d_loss, self.g_loss],
+                                [self.generator(gen_x_dim=self.x_dim, reuse=True), self.d_loss, self.g_loss],
                                 feed_dict={self.x: self.x_vec}
                             )
                             #import IPython; IPython.embed()
