@@ -366,7 +366,10 @@ class DCGAN(object):
         for counter in range(config.gen_size):
             batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim]) \
                                     .astype(np.float32)
-            samples = self.sess.run(self.sampler, feed_dict={self.z: batch_z})
+            G = self.generator(gen_x_dim = config.x_dim, reuse = True)
+            scale = self.scale
+            gen_x_vec = self.coordinates(x_dim, scale = scale)
+            samples = self.sess.run(G, feed_dict={self.z: batch_z, self.x: gen_x_vec})
             file_str = '{:03d}'.format(counter)
 
             #samples = pc_chop(samples,100) #postprocess
@@ -414,7 +417,7 @@ class DCGAN(object):
           if g_loss < 0.6: break
 
         d_loss = self.d_loss.eval({self.x: self.x_vec})
-        if d_loss > 0.45 and g_loss < 0.85:
+        if d_loss > 0.45 and g_loss < 0.9:
           for i in range(1):
             op_count += 1
             _, d_loss = self.sess.run((self.d_optim, self.d_loss), feed_dict={self.x: self.x_vec})
@@ -488,31 +491,31 @@ class DCGAN(object):
                             time.time() - start_time, errD, errG, errV, D_real, D_fake, n_operations))
                     if np.mod(self.counter, config.print_every) == 1: sys.stdout.flush()
 
-                    if np.mod(self.counter, config.save_every) == 1:
-                        #G
-                        if config.dataset == 'wav':
-                            # samples, d_loss, g_loss = self.sess.run(
-                            #     [self.sampler, self.d_loss, self.g_loss],
-                            #     feed_dict={self.z: sample_z, self.images: sample_images.eval()}
-                            # )
-                            import IPython; IPython.embed()
-                            samples, d_loss, g_loss = self.sess.run(
-                                [self.generator(gen_x_dim=self.x_dim, reuse=True), self.d_loss, self.g_loss],
-                                feed_dict={self.x: self.x_vec}
-                            )
-                            #import IPython; IPython.embed()
-                        # Saving samples
-                        if config.dataset == 'wav':
-                            im_title = "d_loss: %.5f, g_loss: %.5f" % (d_loss, g_loss)
-                            file_str = '{:02d}_{:04d}'.format(epoch, idx)
-                            save_waveform(samples,config.out_dir+'/samples/train_'+file_str, title=im_title)
-                            im_sum = get_im_summary(samples, title=file_str+im_title)
-                            summary_str = self.sess.run(im_sum)
-                            self.writer.add_summary(summary_str, self.counter)
+                    # if np.mod(self.counter, config.save_every) == 1:
+                    #     #G
+                    #     if config.dataset == 'wav':
+                    #         # samples, d_loss, g_loss = self.sess.run(
+                    #         #     [self.sampler, self.d_loss, self.g_loss],
+                    #         #     feed_dict={self.z: sample_z, self.images: sample_images.eval()}
+                    #         # )
+                    #         #import IPython; IPython.embed()
+                    #         samples, d_loss, g_loss = self.sess.run(
+                    #             [self.generator(gen_x_dim=self.x_dim, reuse=True), self.d_loss, self.g_loss],
+                    #             feed_dict={self.x: self.x_vec}
+                    #         )
+                    #         #import IPython; IPython.embed()
+                    #     # Saving samples
+                    #     if config.dataset == 'wav':
+                    #         im_title = "d_loss: %.5f, g_loss: %.5f" % (d_loss, g_loss)
+                    #         file_str = '{:02d}_{:04d}'.format(epoch, idx)
+                    #         save_waveform(samples,config.out_dir+'/samples/train_'+file_str, title=im_title)
+                    #         im_sum = get_im_summary(samples, title=file_str+im_title)
+                    #         summary_str = self.sess.run(im_sum)
+                    #         self.writer.add_summary(summary_str, self.counter)
                             
-                            save_audios(samples[0], config.out_dir+'/samples/train_'+file_str+'.wav', 
-                                format='.wav', sample_rate=self.audio_params['sample_rate'])
-                        print("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
+                    #         save_audios(samples[0], config.out_dir+'/samples/train_'+file_str+'.wav', 
+                    #             format='.wav', sample_rate=self.audio_params['sample_rate'])
+                    #     print("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
 
                     if np.mod(self.counter, 500) == 2:
                         self.save(config.out_dir+'/checkpoint', self.counter)
