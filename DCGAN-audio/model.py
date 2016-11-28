@@ -20,15 +20,24 @@ class DCGAN(object):
 
         Args:
             sess: TensorFlow session
-            batch_size: The size of batch. Should be specified before training.
+            batch_size: The size of batch. Should be specified before training. [1]
             sample_length: (optional) The resolution in pixels of the images. [64]
             y_dim: (optional) Dimension of dim for y. [None]
-            z_dim: (optional) Dimension of dim for Z. [100]
+            z_dim: (optional) Dimension of dim for Z (length of z). [100]
             gf_dim: (optional) Dimension of gen filters in first conv layer. [64]
             df_dim: (optional) Dimension of discrim filters in first conv layer. [64]
+            run_g: (optional) number of times to run generator for each discriminator run [2]
             gfc_dim: (optional) Dimension of gen units for for fully connected layer. [1024]
             dfc_dim: (optional) Dimension of discrim units for fully connected layer. [1024]
             c_dim: (optional) Dimension of image color. For grayscale input, set to 1. [3]
+            dataset_name: (optional) type of dataset provided
+            data_dir: directory in which the dataset is located
+            audio_params: json file specifying sampling rate, etc. (should be provided beforehand)
+            checkpoint_dir: where to store checkpoint files
+            out_dir: where to store out files
+            use_disc: whether to use minibatch discrimination
+            use_fourier: whether the discriminator should be able to classify using fourier modes
+            mode: 'generate' or 'train', whether to train the generator or build samples using the sampler
         """
         self.sess = sess
         self.is_grayscale = (c_dim == 1)
