@@ -336,7 +336,7 @@ class DCGAN(object):
     def target_gen(self):
 
         s = self.audio_batch
-        t_prob = tf.exp(self.d_net.run(z))
+        t_prob = tf.exp(self.d_net.run(s))
         t_norm = tf.reduce_sum(t_prob, 2, keep_dims=True)
         t_prob = t_prob/t_norm 
         t_loss = self.d_net.loss(t_prob, encoded=True)
