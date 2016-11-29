@@ -5,3 +5,4 @@
 ./DCGAN-audio/checkpoint
 ./DCGAN-audio/asset
 ./DCGAN-audio/__pycache__
+makefile
