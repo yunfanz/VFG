@@ -102,7 +102,7 @@ class DCGAN(object):
         #     self.sampler = self.sampler(self.z, self.y)
         #     self.D_, self.D_logits = self.discriminator(self.G, self.y, reuse=True)
         # else:
-        self.net = WaveNetModel(
+        self.g_net = WaveNetModel(
             batch_size=self.batch_size,
             dilations=self.wavenet_params["dilations"],
             filter_width=self.wavenet_params["filter_width"],
@@ -227,7 +227,7 @@ class DCGAN(object):
         #     self.G_sum, self.d_loss_fake_sum, self.g_loss_sum])
         # self.d_sum = tf.merge_summary([self.z_sum, self.d_sum, self.d_loss_real_sum, self.d_loss_sum])
         
-        # self.writer = tf.train.SummaryWriter(config.out_dir+"/logs", self.sess.graph)
+        self.writer = tf.train.SummaryWriter(config.out_dir+"/logs", self.sess.graph)
         # sample_z = np.random.uniform(-1, 1, size=(self.batch_size , self.z_dim))
 
         counter = 1
@@ -325,7 +325,7 @@ class DCGAN(object):
     def generator(self, z, y=None):
 
     
-        h_wave = self.net.run(z)
+        h_wave = self.g_net.run(z)
         return h_wave
 
         #s = self.output_length
@@ -363,19 +363,19 @@ class DCGAN(object):
         # h7 = tf.nn.relu(self.g_bn7(h7))
         # h8, self.h8_w, self.h8_b = deconv1d(h7,
         #     [self.batch_size, s, self.c_dim], d_w=2, name='g_h8', with_w=True)
-        # h_wave = tf.reshape(self.net.run(h8[0,:,0]), [self.batch_size, s,self.c_dim])
+        # h_wave = tf.reshape(self.g_net.run(h8[0,:,0]), [self.batch_size, s,self.c_dim])
 
         return tf.nn.tanh(h_wave)
 
     def sampler(self, z, y=None):
         tf.get_variable_scope().reuse_variables()
-        h_wave = self.net.run(z)
+        h_wave = self.g_net.run(z)
         prediction = [np.random.choice(
             np.arange(self.wavenet_params["quantization_channels"]), \
             p=h_wave[0][i]) for i in range(self.sample_length)]
         prediction = tf.argmax(h_wave, 2)
 
-        waveform = mu_law_decode(prediction, self.net.quantization_channels)
+        waveform = mu_law_decode(prediction, self.g_net.quantization_channels)
         return waveform
 
         # s = self.output_length
