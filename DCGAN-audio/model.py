@@ -168,7 +168,7 @@ class DCGAN(object):
         self.d_vars = [var for var in t_vars if 'd_' in var.name]
         self.g_vars = [var for var in t_vars if 'g_' in var.name]
         self.dwave_vars = [var for var in t_vars if 'wavenet' in var.name]
-        self.gwave_vars = [var for var in t_vars if 'gwave_' in var.name]
+        self.gwave_vars = [var for var in t_vars if 'gwave' in var.name]
 
         self.saver = tf.train.Saver()
 
@@ -212,7 +212,7 @@ class DCGAN(object):
         #import IPython; IPython.embed()
         init = tf.initialize_all_variables()
         self.sess.run(init)
-        self.sess.run(d_net.init_ops)
+        # self.sess.run(self.d_net.init_ops)
 
         variables_to_restore = {
             var.name[:-2]: var for var in tf.all_variables()
@@ -220,7 +220,7 @@ class DCGAN(object):
         saver = tf.train.Saver(variables_to_restore)
 
         print('Loading discriminator wavenet from {}'.format(self.wavemodel))
-        saver.restore(sess, self.wavemodel)
+        saver.restore(self.sess, self.wavemodel)
 
 
         # self.g_sum = tf.merge_summary([self.z_sum, self.d__sum, 
@@ -319,7 +319,7 @@ class DCGAN(object):
     def discriminator(self, encoded_sample):
         # if reuse:
         #     tf.get_variable_scope().reuse_variables()
-        dwave_loss = d_net.loss(encoded_sample, encoded=True)
+        dwave_loss = self.d_net.loss(encoded_sample, encoded=True)
         return dwave_loss
 
     def generator(self, z, y=None):
