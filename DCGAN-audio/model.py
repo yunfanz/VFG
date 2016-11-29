@@ -205,7 +205,7 @@ class DCGAN(object):
         #     coord = tf.train.Coordinator()
         #     reader = self.load_wav(coord)
         #import IPython; IPython.embed()
-        gwave_optim = tf.train.AdamOptimizer(1e-3, beta1=config.beta1) \
+        gwave_optim = tf.train.AdamOptimizer(1e-4, beta1=config.beta1) \
                           .minimize(self.g_loss, var_list=self.gwave_vars)
         # g_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
         #                   .minimize(self.g_loss, var_list=self.g_vars)
@@ -326,6 +326,7 @@ class DCGAN(object):
 
     
         h_wave = self.g_net.run(z)
+        import IPython; IPython.embed()
         return tf.exp(h_wave)
 
         #s = self.output_length
