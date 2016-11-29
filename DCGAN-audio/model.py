@@ -86,7 +86,7 @@ class DCGAN(object):
         if dataset == 'wav':
             self.coord = tf.train.Coordinator()
             self.reader = self.load_wav(self.coord)
-            audio_batch = self.reader.dequeue(self.batch_size)
+            self.audio_batch = self.reader.dequeue(self.batch_size)
             #import IPython; IPython.embed()
 
         self.z = tf.placeholder(tf.float32, [None, self.z_dim, 1],
@@ -178,7 +178,7 @@ class DCGAN(object):
         for counter in range(config.gen_size):
             batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim]) \
                                     .astype(np.float32)
-            samples = self.sess.run(self.sampler, feed_dict={self.z: audio_batch.eval()})
+            samples = self.sess.run(self.sampler, feed_dict={self.z: self.audio_batch.eval()})
             file_str = '{:03d}'.format(counter)
 
             #samples = pc_chop(samples,100) #postprocess
@@ -266,10 +266,10 @@ class DCGAN(object):
 
 
                         _, summary_str = self.sess.run([gwave_optim, self.g_loss_sum],
-                            feed_dict={ self.z: audio_batch.eval() })
+                            feed_dict={ self.z: self.audio_batch.eval() })
                         self.writer.add_summary(summary_str, counter)
 
-                        errG = self.g_loss.eval({self.z: audio_batch.eval()})
+                        errG = self.g_loss.eval({self.z: self.audio_batch.eval()})
 
 
                     counter += 1
