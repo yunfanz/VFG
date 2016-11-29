@@ -160,7 +160,7 @@ class DCGAN(object):
         # self.d_loss_real_sum = tf.scalar_summary("d_loss_real", self.d_loss_real)
         # self.d_loss_fake_sum = tf.scalar_summary("d_loss_fake", self.d_loss_fake)
 
-        # self.g_loss_sum = tf.scalar_summary("g_loss", self.g_loss)
+        self.g_loss_sum = tf.scalar_summary("g_loss", self.g_loss)
         # self.d_loss_sum = tf.scalar_summary("d_loss", self.d_loss)
 
         t_vars = tf.trainable_variables()
@@ -206,7 +206,7 @@ class DCGAN(object):
         #     reader = self.load_wav(coord)
         #import IPython; IPython.embed()
         gwave_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
-                          .minimize(self.d_loss, var_list=self.gwave_vars)
+                          .minimize(self.g_loss, var_list=self.gwave_vars)
         # g_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
         #                   .minimize(self.g_loss, var_list=self.g_vars)
         #import IPython; IPython.embed()
@@ -265,7 +265,7 @@ class DCGAN(object):
                         # self.writer.add_summary(summary_str, counter)
 
 
-                        _, summary_str = self.sess.run([gwave_optim, self.gwave_sum],
+                        _, summary_str = self.sess.run([gwave_optim, self.g_loss_sum],
                             feed_dict={ self.z: audio_batch.eval() })
                         self.writer.add_summary(summary_str, counter)
 
