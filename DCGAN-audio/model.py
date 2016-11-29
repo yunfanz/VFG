@@ -16,7 +16,7 @@ class DCGAN(object):
                  batch_size=1, sample_length=1024,
                  y_dim=None, z_dim=100, gf_dim=64, df_dim=64, run_g=2, wavenet_params=None,
                  gfc_dim=1024, dfc_dim=1024, c_dim=1, dataset_name='default', data_dir=None,
-                 audio_params=None, checkpoint_dir=None, out_dir=None, use_disc=False, use_fourier=True, mode='generate'):
+                 audio_params=None, checkpoint_dir=None, wavemodel='./wavenet.ckpt', out_dir=None, use_disc=False, use_fourier=True, mode='generate'):
         """
 
         Args:
@@ -72,12 +72,11 @@ class DCGAN(object):
         else:
             self.gf_dim = gf_dim
             self.df_dim = df_dim
-            self.gfc_dim = gfc_dim
-            self.dfc_dim = dfc_dim
         self.wavenet_params = wavenet_params
         self.checkpoint_dir = checkpoint_dir
         self.use_disc = use_disc
         self.use_fourier = use_fourier
+        self.wavemodel = wavemodel
         if mode == 'train': self.build_model(self.dataset_name)
 
     def build_model(self, dataset):
@@ -85,12 +84,6 @@ class DCGAN(object):
         #     self.y= tf.placeholder(tf.float32, [self.batch_size, self.y_dim], name='y')
         #G
         if dataset == 'wav':
-            # self.audio_samples = tf.placeholder(tf.float32, [self.batch_size] + [self.output_length, 1],
-            #                         name='real_samples')
-#            self.images = tf.placeholder(tf.float32, [self.batch_size] + [self.output_length, 1],
-#                                    name='real_images')
-            # self.gen_audio_samples= tf.placeholder(tf.float32, [self.batch_size] + [self.output_length, 1],
-            #                             name='gen_audio_samples')
             self.coord = tf.train.Coordinator()
             self.reader = self.load_wav(self.coord)
             audio_batch = self.reader.dequeue(self.batch_size)
@@ -120,42 +113,62 @@ class DCGAN(object):
             use_biases=self.wavenet_params["use_biases"],
             scalar_input=self.wavenet_params["scalar_input"],
             initial_filter_width=self.wavenet_params["initial_filter_width"],
-            histograms='False')
+            histograms='False', 
+            global_scope='gwave')
+
+
+        self.d_net = WaveNetModel(
+            batch_size=self.batch_size,
+            dilations=self.wavenet_params["dilations"],
+            filter_width=self.wavenet_params["filter_width"],
+            residual_channels=self.wavenet_params["residual_channels"],
+            dilation_channels=self.wavenet_params["dilation_channels"],
+            skip_channels=self.wavenet_params["skip_channels"],
+            quantization_channels=self.wavenet_params["quantization_channels"],
+            use_biases=self.wavenet_params["use_biases"],
+            scalar_input=self.wavenet_params["scalar_input"],
+            initial_filter_width=self.wavenet_params["initial_filter_width"],
+            histograms='False', 
+            global_scope='wavenet')
+
 
         self.G = self.generator(self.z)
-        self.D, self.D_logits = self.discriminator(audio_batch, include_fourier=self.use_fourier)
+        self.g_loss = self.discriminator(self.G)
+        # self.D, self.D_logits = self.discriminator(audio_batch, include_fourier=self.use_fourier)
 
-        self.sampler = tf.stop_gradient(self.sampler(self.z))
-        self.D_, self.D_logits_ = self.discriminator(self.G, reuse=True, include_fourier=self.use_fourier)
+        # #self.sampler = tf.stop_gradient(self.sampler(self.z))
+        # self.D_, self.D_logits_ = self.discriminator(self.G, reuse=True, include_fourier=self.use_fourier)
 
         
-        #import IPython; IPython.embed()
-        self.d_sum = tf.histogram_summary("d", self.D)
-        self.d__sum = tf.histogram_summary("d_", self.D_)
-        #G need to check sample rate
-        self.G_sum = tf.audio_summary("G", self.G, sample_rate=self.audio_params['sample_rate'])
+        # #import IPython; IPython.embed()
+        # self.d_sum = tf.histogram_summary("d", self.D)
+        # self.d__sum = tf.histogram_summary("d_", self.D_)
+        # #G need to check sample rate
+        # self.G_sum = tf.audio_summary("G", self.G, sample_rate=self.audio_params['sample_rate'])
 
-        self.d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(self.D_logits, tf.ones_like(self.D)))
-        self.d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(self.D_logits_, tf.zeros_like(self.D_)))
-        self.g_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(self.D_logits_, tf.ones_like(self.D_)))
-        self.d_loss = self.d_loss_real + self.d_loss_fake
+        # self.d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(self.D_logits, tf.ones_like(self.D)))
+        # self.d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(self.D_logits_, tf.zeros_like(self.D_)))
+        # self.g_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(self.D_logits_, tf.ones_like(self.D_)))
+        # self.d_loss = self.d_loss_real + self.d_loss_fake
 
-        #G experiments with losses
-        #self.max_like_g_loss = tf.reduce_mean(-tf.exp(self.D_logits_)/2.)
-        #self.g_loss = self.max_like_g_loss
-        #import IPython; IPython.embed()
-        #self.g_loss = self.g_loss - self.d_loss
+        # #G experiments with losses
+        # #self.max_like_g_loss = tf.reduce_mean(-tf.exp(self.D_logits_)/2.)
+        # #self.g_loss = self.max_like_g_loss
+        # #import IPython; IPython.embed()
+        # #self.g_loss = self.g_loss - self.d_loss
 
-        self.d_loss_real_sum = tf.scalar_summary("d_loss_real", self.d_loss_real)
-        self.d_loss_fake_sum = tf.scalar_summary("d_loss_fake", self.d_loss_fake)
+        # self.d_loss_real_sum = tf.scalar_summary("d_loss_real", self.d_loss_real)
+        # self.d_loss_fake_sum = tf.scalar_summary("d_loss_fake", self.d_loss_fake)
 
-        self.g_loss_sum = tf.scalar_summary("g_loss", self.g_loss)
-        self.d_loss_sum = tf.scalar_summary("d_loss", self.d_loss)
+        # self.g_loss_sum = tf.scalar_summary("g_loss", self.g_loss)
+        # self.d_loss_sum = tf.scalar_summary("d_loss", self.d_loss)
 
         t_vars = tf.trainable_variables()
 
         self.d_vars = [var for var in t_vars if 'd_' in var.name]
-        self.g_vars = [var for var in t_vars if ('g_' in var.name) or ('wavenet' in var.name)]
+        self.g_vars = [var for var in t_vars if 'g_' in var.name]
+        self.dwave_vars = [var for var in t_vars if 'wavenet' in var.name]
+        self.gwave_vars = [var for var in t_vars if 'gwave_' in var.name]
 
         self.saver = tf.train.Saver()
 
@@ -165,7 +178,7 @@ class DCGAN(object):
         for counter in range(config.gen_size):
             batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim]) \
                                     .astype(np.float32)
-            samples = self.sess.run(self.sampler, feed_dict={self.z: batch_z})
+            samples = self.sess.run(self.sampler, feed_dict={self.z: audio_batch.eval()})
             file_str = '{:03d}'.format(counter)
 
             #samples = pc_chop(samples,100) #postprocess
@@ -192,21 +205,30 @@ class DCGAN(object):
         #     coord = tf.train.Coordinator()
         #     reader = self.load_wav(coord)
         #import IPython; IPython.embed()
-        d_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
-                          .minimize(self.d_loss, var_list=self.d_vars)
-        g_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
-                          .minimize(self.g_loss, var_list=self.g_vars)
+        gwave_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
+                          .minimize(self.d_loss, var_list=self.gwave_vars)
+        # g_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
+        #                   .minimize(self.g_loss, var_list=self.g_vars)
         #import IPython; IPython.embed()
         init = tf.initialize_all_variables()
         self.sess.run(init)
+        self.sess.run(d_net.init_ops)
+
+        variables_to_restore = {
+            var.name[:-2]: var for var in tf.all_variables()
+            if 'wavenet' in var.name and not ('state_buffer' in var.name or 'pointer' in var.name)}
+        saver = tf.train.Saver(variables_to_restore)
+
+        print('Loading discriminator wavenet from {}'.format(self.wavemodel))
+        saver.restore(sess, self.wavemodel)
 
 
-        self.g_sum = tf.merge_summary([self.z_sum, self.d__sum, 
-            self.G_sum, self.d_loss_fake_sum, self.g_loss_sum])
-        self.d_sum = tf.merge_summary([self.z_sum, self.d_sum, self.d_loss_real_sum, self.d_loss_sum])
+        # self.g_sum = tf.merge_summary([self.z_sum, self.d__sum, 
+        #     self.G_sum, self.d_loss_fake_sum, self.g_loss_sum])
+        # self.d_sum = tf.merge_summary([self.z_sum, self.d_sum, self.d_loss_real_sum, self.d_loss_sum])
         
-        self.writer = tf.train.SummaryWriter(config.out_dir+"/logs", self.sess.graph)
-        sample_z = np.random.uniform(-1, 1, size=(self.batch_size , self.z_dim))
+        # self.writer = tf.train.SummaryWriter(config.out_dir+"/logs", self.sess.graph)
+        # sample_z = np.random.uniform(-1, 1, size=(self.batch_size , self.z_dim))
 
         counter = 1
         start_time = time.time()
@@ -238,61 +260,47 @@ class DCGAN(object):
                         # audio_batch = reader.dequeue(self.batch_size) 
                         # audio_batch = audio_batch.eval()
                         # Update D network
-                        _, summary_str = self.sess.run([d_optim, self.d_sum],
-                            feed_dict={ self.z: batch_z })
-                        self.writer.add_summary(summary_str, counter)
-
-                        # Update G network run_g times
-                        for i in range(self.run_g):
-                            _, summary_str = self.sess.run([g_optim, self.g_sum],
-                                feed_dict={ self.z: batch_z })
-                            self.writer.add_summary(summary_str, counter)
-
-                        # # Run g_optim twice to make sure that d_loss does not go to zero (different from paper)
-                        # _, summary_str = self.sess.run([g_optim, self.g_sum],
+                        # _, summary_str = self.sess.run([d_optim, self.d_sum],
                         #     feed_dict={ self.z: batch_z })
                         # self.writer.add_summary(summary_str, counter)
 
 
-                        errD_fake = self.d_loss_fake.eval({self.z: batch_z})
-                        #errD_real = self.d_loss_real.eval({self.audio_samples: audio_batch})
-                        errD_real = self.d_loss_real.eval()
-                        errG = self.g_loss.eval({self.z: batch_z})
-                        #G average over batch
-                        #D_real = self.D.eval({self.audio_samples: audio_batch}).mean()
-                        D_real = self.D.eval().mean()
-                        D_fake = self.D_.eval({self.z: batch_z}).mean()
+                        _, summary_str = self.sess.run([gwave_optim, self.gwave_sum],
+                            feed_dict={ self.z: audio_batch.eval() })
+                        self.writer.add_summary(summary_str, counter)
+
+                        errG = self.g_loss.eval({self.z: audio_batch.eval()})
 
 
                     counter += 1
-                    print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f, D: %.3f, D_: %.3f" \
+                    print("Epoch: [%2d] [%4d/%4d] time: %4.4f g_loss: %.8f" \
                         % (epoch+1, idx+1, batch_idxs,
-                            time.time() - start_time, errD_fake+errD_real, errG, D_real, D_fake))
+                            time.time() - start_time, errG))
 
-                    if np.mod(counter, config.save_every) == 1:
-                        #G
-                        if config.dataset == 'wav':
-                            # samples, d_loss, g_loss = self.sess.run(
-                            #     [self.sampler, self.d_loss, self.g_loss],
-                            #     feed_dict={self.z: sample_z, self.images: sample_images.eval()}
-                            # )
-                            samples, d_loss, g_loss = self.sess.run(
-                                [self.sampler, self.d_loss, self.g_loss],
-                                feed_dict={self.z: batch_z}
-                            )
-                            #import IPython; IPython.embed()
-                        # Saving samples
-                        if config.dataset == 'wav':
-                            im_title = "d_loss: %.5f, g_loss: %.5f" % (d_loss, g_loss)
-                            file_str = '{:02d}_{:04d}'.format(epoch, idx)
-                            save_waveform(samples,config.out_dir+'/samples/train_'+file_str, title=im_title)
-                            im_sum = get_im_summary(samples, title=file_str+im_title)
-                            summary_str = self.sess.run(im_sum)
-                            self.writer.add_summary(summary_str, counter)
+                    # if np.mod(counter, config.save_every) == 1:
+                    #     #G
+                    #     if config.dataset == 'wav':
+                    #         # samples, d_loss, g_loss = self.sess.run(
+                    #         #     [self.sampler, self.d_loss, self.g_loss],
+                    #         #     feed_dict={self.z: sample_z, self.images: sample_images.eval()}
+                    #         # )
+                    #         samples, d_loss, g_loss = self.sess.run(
+                    #             [self.sampler, self.d_loss, self.g_loss],
+                    #             feed_dict={self.z: batch_z}
+                    #         )
+                    #         #import IPython; IPython.embed()
+                    #     # Saving samples
+                    #     if config.dataset == 'wav':
+                    #         im_title = "d_loss: %.5f, g_loss: %.5f" % (d_loss, g_loss)
+                    #         file_str = '{:02d}_{:04d}'.format(epoch, idx)
+                    #         save_waveform(samples,config.out_dir+'/samples/train_'+file_str, title=im_title)
+                    #         im_sum = get_im_summary(samples, title=file_str+im_title)
+                    #         summary_str = self.sess.run(im_sum)
+                    #         self.writer.add_summary(summary_str, counter)
                             
-                            save_audios(samples[0], config.out_dir+'/samples/train_'+file_str+'.wav', 
-                                format='.wav', sample_rate=self.audio_params['sample_rate'])
-                        print("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
+                    #         save_audios(samples[0], config.out_dir+'/samples/train_'+file_str+'.wav', 
+                    #             format='.wav', sample_rate=self.audio_params['sample_rate'])
+                    #     print("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
 
                     if np.mod(counter, 500) == 2:
                         self.save(config.out_dir+'/checkpoint', counter)
@@ -308,56 +316,11 @@ class DCGAN(object):
                 self.coord.request_stop()
                 self.coord.join(threads)
 
-    def discriminator(self, audio_sample, y=None, reuse=False, include_fourier=False):
-        if reuse:
-            tf.get_variable_scope().reuse_variables()
-        h4_dim = self.sample_length*self.df_dim//32
-        try: in_shape = audio_sample.get_shape()
-        except(AttributeError): in_shape = audio_sample.shape
-        if in_shape[-1] == 1:
-            input_batch = mu_law_encode(audio_sample,
-                                self.net.quantization_channels)
-            encoded = self.net._one_hot(input_batch)
-            if self.net.scalar_input:
-                input_d = tf.reshape(
-                    tf.cast(input_batch, tf.float32),
-                    [self.batch_size, -1, 1])
-            else:
-                input_d = encoded
-        else:
-            input_d = audio_sample
-
-        h0 = lrelu(conv1d(input_d, self.df_dim, name='d_h0_conv'))
-        h1 = lrelu(self.d_bn1(conv1d(h0, self.df_dim*2, name='d_h1_conv')))
-        h2 = lrelu(self.d_bn2(conv1d(h1, self.df_dim*4, name='d_h2_conv')))
-        h3 = lrelu(self.d_bn3(conv1d(h2, self.df_dim*8, name='d_h3_conv')))
-        h4 = linear(tf.reshape(h3, [self.batch_size, -1]), 1, name='d_h3_lin',missing_dim=h4_dim)
-
-        # h0_ = lrelu(conv1d(input_d_, self.df_dim, name='d_h0_conv'))
-        # h1_ = lrelu(self.d_bn1(conv1d(h0, self.df_dim*2, name='d_h1_conv')))
-        # h2_ = lrelu(self.d_bn2(conv1d(h1, self.df_dim*4, name='d_h2_conv')))
-        # h3_ = lrelu(self.d_bn3(conv1d(h2, self.df_dim*8, name='d_h3_conv')))
-        # h4_ = linear(tf.reshape(h3, [self.batch_size, -1]), 1, name='d_h3_lin',missing_dim=h4_dim)
-
-        if include_fourier:
-            fourier_sample = get_fourier(audio_sample)
-            h0_f = lrelu(conv1d(fourier_sample, self.df_dim, name='d_h0_f_conv'))
-            h1_f = lrelu(self.d_bn1f(conv1d(h0_f, self.df_dim*2, name='d_h1_f_conv')))
-            h2_f = lrelu(self.d_bn2f(conv1d(h1_f, self.df_dim*4, name='d_h2_f_conv')))
-            h3_f = lrelu(self.d_bn3f(conv1d(h2_f, self.df_dim*8, name='d_h3_f_conv')))
-            #import IPython; IPython.embed()
-            if self.use_disc: #not yet supported
-                h_f_disc = mb_disc_layer(tf.reshape(h3_f, [self.batch_size, -1]),name='f_mb_disc')
-                h4_f = linear(h_f_disc, 1, name='d_h3_f_lin')
-            else:
-                h4_f = linear(tf.reshape(h3_f, [self.batch_size, -1]), 1, name='d_h3_f_lin', missing_dim=h4_dim)
-            h5 = linear(tf.concat(1,[h4,h4_f]),1, name='d_h5')
-            #h5 = (h4+h4_f)/2
-        else:
-            h5 = h4
-            #import IPython; IPython.embed()
-
-        return tf.nn.sigmoid(h4), h4
+    def discriminator(self, encoded_sample):
+        # if reuse:
+        #     tf.get_variable_scope().reuse_variables()
+        dwave_loss = d_net.loss(encoded_sample, encoded=True)
+        return dwave_loss
 
     def generator(self, z, y=None):
 
@@ -407,6 +370,9 @@ class DCGAN(object):
     def sampler(self, z, y=None):
         tf.get_variable_scope().reuse_variables()
         h_wave = self.net.run(z)
+        prediction = [np.random.choice(
+            np.arange(self.wavenet_params["quantization_channels"]), \
+            p=h_wave[0][i]) for i in range(self.sample_length)]
         prediction = tf.argmax(h_wave, 2)
 
         waveform = mu_law_decode(prediction, self.net.quantization_channels)

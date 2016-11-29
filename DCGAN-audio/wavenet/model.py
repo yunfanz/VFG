@@ -44,7 +44,8 @@ class WaveNetModel(object):
                  use_biases=False,
                  scalar_input=False,
                  initial_filter_width=32,
-                 histograms=False):
+                 histograms=False, 
+                 global_scope='wavenet'):
         '''Initializes the WaveNet model.
 
         Args:
@@ -83,8 +84,9 @@ class WaveNetModel(object):
         self.scalar_input = scalar_input
         self.initial_filter_width = initial_filter_width
         self.histograms = histograms
-
+        self.global_scope = global_scope
         self.variables = self._create_variables()
+
 
     def _create_variables(self):
         '''This function creates all variables used by the network.
@@ -93,7 +95,7 @@ class WaveNetModel(object):
 
         var = dict()
 
-        with tf.variable_scope('wavenet'):
+        with tf.variable_scope(self.global_scope):
             with tf.variable_scope('causal_layer'):
                 layer = dict()
                 if self.scalar_input:
@@ -426,6 +428,7 @@ class WaveNetModel(object):
         all samples in the input waveform.
         If you want to generate audio by feeding the output of the network back
         as an input, see predict_proba_incremental for a faster alternative.'''
+        name = self.global_scope
         with tf.name_scope(name):
             if self.scalar_input:
                 encoded = tf.cast(waveform, tf.float32)
@@ -447,6 +450,7 @@ class WaveNetModel(object):
         '''Computes the probability distribution of the next sample
         incrementally, based on a single sample and all previously passed
         samples.'''
+        name = self.global_scope
         if self.filter_width > 2:
             raise NotImplementedError("Incremental generation does not "
                                       "support filter_width > 2.")
@@ -470,17 +474,21 @@ class WaveNetModel(object):
     def loss(self,
              input_batch,
              l2_regularization_strength=None,
-             name='wavenet'):
+             name='wavenet', encoded=True):
         '''Creates a WaveNet network and returns the autoencoding loss.
 
         The variables are all scoped to the given name.
         '''
+        name = self.global_scope
         with tf.name_scope(name):
             # We mu-law encode and quantize the input audioform.
-            input_batch = mu_law_encode(input_batch,
-                                        self.quantization_channels)
+            if not encoded:
+                input_batch = mu_law_encode(input_batch,
+                                            self.quantization_channels)
 
-            encoded = self._one_hot(input_batch)
+                encoded = self._one_hot(input_batch)
+            else:
+                encoded = input_batch
             if self.scalar_input:
                 network_input = tf.reshape(
                     tf.cast(input_batch, tf.float32),
@@ -532,6 +540,7 @@ class WaveNetModel(object):
 
         The variables are all scoped to the given name.
         '''
+        name = self.global_scope
         with tf.name_scope(name):
             # We mu-law encode and quantize the input audioform.
             if not encoded:
