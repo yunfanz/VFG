@@ -190,12 +190,11 @@ class DCGAN(object):
         #     This can be interpreted as the number of "nats" required
         #     for transmitting the the latent space distribution given
         #     the prior.
-        self.latent_loss = 0
-        #self.latent_loss = -0.5 * tf.reduce_sum(1 + self.z_log_sigma_sq - tf.square(self.z_mean)
+        self.latent_loss = -0.5 * tf.reduce_sum(1 + self.z_log_sigma_sq - tf.square(self.z_mean)
                                            #- tf.exp(self.z_log_sigma_sq), 1)
         # self.latent_loss = -0.5 * tf.reduce_sum(1 + tf.log(self.z_sigma_sq) - tf.square(self.z_mean)
         #                                    - self.z_sigma_sq, 1)
-        self.vae_loss = tf.reduce_mean(self.reconstr_loss + self.latent_loss) / self.x_dim 
+        self.vae_loss = tf.reduce_mean(self.reconstr_loss) / self.x_dim 
         # average over batch and pixel
         #import IPython; IPython.embed()
         self.r_loss_sum = tf.scalar_summary("r_loss", self.reconstr_loss)
