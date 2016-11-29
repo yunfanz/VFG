@@ -271,14 +271,14 @@ class DCGAN(object):
 
                         errG = self.g_loss.eval({self.z: self.audio_batch.eval()})
 
-                        tp, t_loss = self.target_gen().eval()
-                        import IPython; IPython.embed()
+                        tp, errT = self.target_gen().eval()
+                        #import IPython; IPython.embed()
 
 
                     counter += 1
-                    print("Epoch: [%2d] [%4d/%4d] time: %4.4f g_loss: %.8f" \
+                    print("Epoch: [%2d] [%4d/%4d] time: %4.4f g_loss: %.6f target_loss: %.6f" \
                         % (epoch+1, idx+1, batch_idxs,
-                            time.time() - start_time, errG))
+                            time.time() - start_time, errG, errT))
 
                     # if np.mod(counter, config.save_every) == 1:
                     #     #G
@@ -339,8 +339,8 @@ class DCGAN(object):
         t_prob = tf.exp(self.d_net.run(z))
         t_norm = tf.reduce_sum(t_prob, 2, keep_dims=True)
         t_prob = t_prob/t_norm 
-        t_loss = self.d_net.loss(s, encoded=False)
-        return (t_wave, t_loss)
+        t_loss = self.d_net.loss(t_prob, encoded=True)
+        return (t_prob, t_loss)
 
         #s = self.output_length
         # sh = [s//2, s//4, s//8, s//16, s//32, int(s/32/4**1), int(s/32/4**2), int(s/32/4**3)]
