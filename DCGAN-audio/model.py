@@ -156,7 +156,7 @@ class DCGAN(object):
 
         self.create_vae_loss_terms()
         self.create_gan_loss_terms()
-        self.balanced_loss = 1.0 * self.g_loss + 1.0 * self.reconstr_loss # can try to weight these.
+        self.balanced_loss = 1.0 * self.g_loss + 1.0 * self.vae_loss # can try to weight these.
 
         self.t_vars = tf.trainable_variables()
 
@@ -193,7 +193,7 @@ class DCGAN(object):
         self.latent_loss = -0.5 * tf.reduce_sum( - tf.square(self.z_mean), 1)
         # self.latent_loss = -0.5 * tf.reduce_sum(1 + tf.log(self.z_sigma_sq) - tf.square(self.z_mean)
         #                                    - self.z_sigma_sq, 1)
-        self.vae_loss = tf.reduce_mean(self.reconstr_loss) / self.x_dim 
+        self.vae_loss = tf.reduce_mean(self.reconstr_loss) #/ self.x_dim 
         # average over batch and pixel
         #import IPython; IPython.embed()
         self.r_loss_sum = tf.scalar_summary("r_loss", self.reconstr_loss)
