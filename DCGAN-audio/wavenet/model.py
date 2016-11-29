@@ -527,17 +527,20 @@ class WaveNetModel(object):
     def run(self,
              input_batch,
              l2_regularization_strength=None,
-             name='wave_gen'):
+             encoded=False, name='wave_gen'):
         '''Creates a WaveNet network and returns the autoencoding loss.
 
         The variables are all scoped to the given name.
         '''
         with tf.name_scope(name):
             # We mu-law encode and quantize the input audioform.
-            input_batch = mu_law_encode(input_batch,
-                                        self.quantization_channels)
+            if not encoded:
+                input_batch = mu_law_encode(input_batch,
+                                            self.quantization_channels)
 
-            encoded = self._one_hot(input_batch)
+                encoded = self._one_hot(input_batch)
+            else:
+                encoded = input_batch
             if self.scalar_input:
                 network_input = tf.reshape(
                     tf.cast(input_batch, tf.float32),
