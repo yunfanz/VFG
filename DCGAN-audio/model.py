@@ -109,7 +109,7 @@ class DCGAN(object):
         # Use recognition network to determine mean and
         # (log) variance of Gaussian distribution in latent
         # space
-        self.z_mean, self.z_log_sigma_sq = self.encoder()
+        self.z_mean = self.encoder()
         #self.z_mean, self.z_sigma_sq = self.encoder()
 
         # Draw one sample z from Gaussian distribution
@@ -232,7 +232,7 @@ class DCGAN(object):
         # return (z_mean, z_sigma_sq)
         #z_log_sigma_sq = linear(H2, self.z_dim, self.model_name+'_q_lin3_log_sigma_sq')
         z_mean = tf.nn.tanh(z_mean)
-        return (z_mean, z_log_sigma_sq)
+        return z_mean
 
     def discriminator(self, audio_sample, y=None, reuse=False, include_fourier=True):
         if reuse:
