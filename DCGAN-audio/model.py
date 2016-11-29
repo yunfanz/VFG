@@ -168,7 +168,7 @@ class DCGAN(object):
         self.d_optim = tf.train.AdamOptimizer(self.learning_rate_d, beta1=self.beta1) \
                           .minimize(self.d_loss, var_list=self.d_vars)
         self.g_optim = tf.train.AdamOptimizer(self.learning_rate, beta1=self.beta1) \
-                          .minimize(self.balanced_loss, var_list=self.vae_vars)
+                          .minimize(self.balanced_loss, var_list=self.g_vars)
         self.vae_optim = tf.train.AdamOptimizer(self.learning_rate_vae, beta1=self.beta1) \
                           .minimize(self.vae_loss, var_list=self.vae_vars)
         self.saver = tf.train.Saver()
