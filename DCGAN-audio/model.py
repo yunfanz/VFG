@@ -138,7 +138,7 @@ class DCGAN(object):
         
         #import IPython; IPython.embed()
         self.d_sum = tf.histogram_summary("d", self.D_logits)
-        self.d__sum = tf.histogram_summary("d_", self.D__logits_)
+        self.d__sum = tf.histogram_summary("d_", self.D_logits_)
         self.G_sum = tf.audio_summary("G", self.G, sample_rate=self.audio_params['sample_rate'])
 
         # self.d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(self.D_logits, tf.ones_like(self.D)))
