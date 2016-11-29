@@ -255,6 +255,7 @@ class DCGAN(object):
 
                     batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim, 1]) \
                                 .astype(np.float32)
+                    import IPython; IPython.embed()
                     #G
                     if config.dataset == 'wav':
                         # audio_batch = reader.dequeue(self.batch_size) 
@@ -263,7 +264,6 @@ class DCGAN(object):
                         # _, summary_str = self.sess.run([d_optim, self.d_sum],
                         #     feed_dict={ self.z: batch_z })
                         # self.writer.add_summary(summary_str, counter)
-
 
                         _, summary_str = self.sess.run([gwave_optim, self.g_loss_sum],
                             feed_dict={ self.z: self.audio_batch.eval() })
@@ -326,8 +326,14 @@ class DCGAN(object):
 
     
         h_wave = self.g_net.run(z)
-        import IPython; IPython.embed()
         return tf.exp(h_wave)
+
+    def target_gen(self, z, y=None):
+
+    
+        t_wave = self.d_net.run(z)
+        t_loss = self.d_net.loss(z)
+        return (t_wave, t_loss)
 
         #s = self.output_length
         # sh = [s//2, s//4, s//8, s//16, s//32, int(s/32/4**1), int(s/32/4**2), int(s/32/4**3)]
