@@ -115,12 +115,12 @@ class DCGAN(object):
         # Draw one sample z from Gaussian distribution
         eps = tf.random_normal((self.batch_size, self.z_dim), 0, 1, dtype=tf.float32)
         # z = mu + sigma*epsilon
-        # self.z = self.z_mean # for regular auto-encoder
-        self.z = tf.add(self.z_mean, tf.mul(tf.sqrt(tf.exp(self.z_log_sigma_sq)), eps))
+        self.z = self.z_mean # for regular auto-encoder
+        #self.z = tf.add(self.z_mean, tf.mul(tf.sqrt(tf.exp(self.z_log_sigma_sq)), eps))
         #self.z = tf.add(self.z_mean, tf.mul(tf.sqrt(self.z_sigma_sq), eps))
-        self.z_sum_mean = tf.histogram_summary("z_mean", self.z_mean)
-        self.z_sum_sig = tf.histogram_summary("z_sig", self.z_log_sigma_sq)
-        self.z_sum = tf.merge_summary([self.z_sum_mean, self.z_sum_sig])
+        self.z_sum = tf.histogram_summary("z_mean", self.z_mean)
+        #self.z_sum_sig = tf.histogram_summary("z_sig", self.z_log_sigma_sq)
+        #self.z_sum = tf.merge_summary([self.z_sum_mean, self.z_sum_sig])
         #self.z_sum = tf.histogram_summary("z", self.z)
 
         #G deprecated, this only applies for mnist
@@ -190,8 +190,9 @@ class DCGAN(object):
         #     This can be interpreted as the number of "nats" required
         #     for transmitting the the latent space distribution given
         #     the prior.
-        self.latent_loss = -0.5 * tf.reduce_sum(1 + self.z_log_sigma_sq - tf.square(self.z_mean)
-                                           - tf.exp(self.z_log_sigma_sq), 1)
+        self.latent_loss = 0
+        #self.latent_loss = -0.5 * tf.reduce_sum(1 + self.z_log_sigma_sq - tf.square(self.z_mean)
+                                           #- tf.exp(self.z_log_sigma_sq), 1)
         # self.latent_loss = -0.5 * tf.reduce_sum(1 + tf.log(self.z_sigma_sq) - tf.square(self.z_mean)
         #                                    - self.z_sigma_sq, 1)
         self.vae_loss = tf.reduce_mean(self.reconstr_loss + self.latent_loss) / self.x_dim 
@@ -229,7 +230,8 @@ class DCGAN(object):
         z_mean = linear(H2, self.z_dim, self.model_name+'_q_lin3_mean')
         # z_sigma_sq = linear(H2, self.z_dim, self.model_name+'_q_lin3_sigma_sq')
         # return (z_mean, z_sigma_sq)
-        z_log_sigma_sq = linear(H2, self.z_dim, self.model_name+'_q_lin3_log_sigma_sq')
+        #z_log_sigma_sq = linear(H2, self.z_dim, self.model_name+'_q_lin3_log_sigma_sq')
+        z_mean = tf.nn.tanh(z_mean)
         return (z_mean, z_log_sigma_sq)
 
     def discriminator(self, audio_sample, y=None, reuse=False, include_fourier=True):
