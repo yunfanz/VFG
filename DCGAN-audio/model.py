@@ -326,7 +326,7 @@ class DCGAN(object):
 
     
         h_wave = self.g_net.run(z)
-        return h_wave
+        return tf.exp(h_wave)
 
         #s = self.output_length
         # sh = [s//2, s//4, s//8, s//16, s//32, int(s/32/4**1), int(s/32/4**2), int(s/32/4**3)]
