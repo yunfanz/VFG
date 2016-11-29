@@ -280,7 +280,7 @@ class DCGAN(object):
 
     #     return result
 
-    def generator(self, gen_x_dim = 1024, reuse = False, tr=False):
+    def generator(self, gen_x_dim = 1024, reuse = False, tr=True):
         if reuse:
             tf.get_variable_scope().reuse_variables()
             tr = False
