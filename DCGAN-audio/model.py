@@ -115,6 +115,7 @@ class DCGAN(object):
         # Draw one sample z from Gaussian distribution
         eps = tf.random_normal((self.batch_size, self.z_dim), 0, 1, dtype=tf.float32)
         # z = mu + sigma*epsilon
+        # self.z = self.z_mean # for regular auto-encoder
         self.z = tf.add(self.z_mean, tf.mul(tf.sqrt(tf.exp(self.z_log_sigma_sq)), eps))
         #self.z = tf.add(self.z_mean, tf.mul(tf.sqrt(self.z_sigma_sq), eps))
         self.z_sum_mean = tf.histogram_summary("z_mean", self.z_mean)
@@ -167,6 +168,7 @@ class DCGAN(object):
         # Use ADAM optimizer
         self.d_optim = tf.train.AdamOptimizer(self.learning_rate_d, beta1=self.beta1) \
                           .minimize(self.d_loss, var_list=self.d_vars)
+        #import IPython; IPython.embed()
         self.g_optim = tf.train.AdamOptimizer(self.learning_rate, beta1=self.beta1) \
                           .minimize(self.balanced_loss, var_list=self.g_vars)
         self.vae_optim = tf.train.AdamOptimizer(self.learning_rate_vae, beta1=self.beta1) \
@@ -179,7 +181,7 @@ class DCGAN(object):
         #    -tf.reduce_sum(self.batch_flatten * tf.log(1e-10 + self.batch_reconstruct_flatten)
         #                   + (1-self.batch_flatten) * tf.log(1e-10 + 1 - self.batch_reconstruct_flatten), 1)
         #Gaussian MLP
-        self.reconstr_loss = 0.5*tf.reduce_mean(tf.square(self.batch_flatten-self.batch_reconstruct_flatten)/1)
+        self.reconstr_loss = 0.5*tf.reduce_sum(tf.square(self.batch_flatten-self.batch_reconstruct_flatten)/1)
         # L2
         #self.reconstr_loss = tf.reduce_mean(tf.square(self.batch_flatten-self.batch_reconstruct_flatten))
         # 2.) The latent loss, which is defined as the Kullback Leibler divergence
@@ -278,8 +280,7 @@ class DCGAN(object):
 
     #     return result
 
-    def generator(self, gen_x_dim = 1024, reuse = False):
-        tr = True
+    def generator(self, gen_x_dim = 1024, reuse = False, tr=False):
         if reuse:
             tf.get_variable_scope().reuse_variables()
             tr = False
