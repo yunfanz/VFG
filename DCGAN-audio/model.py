@@ -355,7 +355,8 @@ class DCGAN(object):
 
         h7 = deconv1d(h6,
             [self.batch_size, sh[-8], self.gf_dim*1], d_w=2, name='g_h7')
-        h7 = tf.nn.relu(self.g_bn7(h7))
+        #h7 = tf.nn.relu(self.g_bn7(h7))
+        h7 = tf.nn.relu(self.g_bn7(h7, train=False))
         h8 = deconv1d(h7,
             [self.batch_size, s, self.c_dim], d_w=2, name='g_h8')
         return tf.nn.tanh(h8)
@@ -364,9 +365,8 @@ class DCGAN(object):
         '''generate samples from trained model'''
         self.writer = tf.train.SummaryWriter(config.out_dir+"/logs", self.sess.graph)
         for counter in range(config.gen_size):
-            batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim]) \
-                                    .astype(np.float32)
-            G = self.sampler(gen_x_dim = config.x_dim)
+            batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim]).astype(np.float32)
+            G = self.sampler(gen_x_dim = self.x_dim)
             scale = self.scale
             gen_x_vec = self.coordinates(x_dim, scale = scale)
             samples = self.sess.run(G, feed_dict={self.z: batch_z, self.x: gen_x_vec})
@@ -499,6 +499,7 @@ class DCGAN(object):
                             #     feed_dict={self.z: sample_z, self.images: sample_images.eval()}
                             # )
                             #import IPython; IPython.embed()
+
                             samples, d_loss, g_loss = self.sess.run(
                                 [self.sampler(gen_x_dim=self.x_dim), self.d_loss, self.g_loss],
                                 feed_dict={self.x: self.x_vec}
