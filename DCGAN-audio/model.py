@@ -134,6 +134,7 @@ class DCGAN(object):
 
         self.G = self.generator(self.z)
         self.g_loss = self.discriminator(self.G)
+        self.t_loss = self.target_loss(with_p=False)
         # self.D, self.D_logits = self.discriminator(audio_batch, include_fourier=self.use_fourier)
 
         # #self.sampler = tf.stop_gradient(self.sampler(self.z))
@@ -270,9 +271,8 @@ class DCGAN(object):
                         self.writer.add_summary(summary_str, counter)
 
                         errG = self.g_loss.eval({self.z: self.audio_batch.eval()})
-
-                        tp, t_loss = self.target_gen()
-                        errT = t_loss.eval() #import IPython; IPython.embed()
+                        errT = self.t_loss.eval() 
+                        #import IPython; IPython.embed()
 
 
                     counter += 1
@@ -333,14 +333,17 @@ class DCGAN(object):
         h_prob = h_prob/h_norm 
         return h_prob
 
-    def target_gen(self):
+    def target_gen(self, with_p=False):
 
         s = self.audio_batch
         t_prob = tf.exp(self.d_net.run(s))
         t_norm = tf.reduce_sum(t_prob, 2, keep_dims=True)
         t_prob = t_prob/t_norm 
         t_loss = self.d_net.loss(t_prob, encoded=True)
-        return (t_prob, t_loss)
+        if with_p:
+            return (t_prob, t_loss)
+        else: 
+            return t_loss
 
         #s = self.output_length
         # sh = [s//2, s//4, s//8, s//16, s//32, int(s/32/4**1), int(s/32/4**2), int(s/32/4**3)]
