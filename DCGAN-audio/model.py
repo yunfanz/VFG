@@ -201,8 +201,9 @@ class DCGAN(object):
     def sample(self, counter):
         '''generate samples from trained model'''
         _onehot = self.sess.run(self.G, feed_dict={self.z: self.audio_batch.eval()})
-        _waveform = [np.random.choice(self.q_chans,p=_onehot[0][i]) for i in range(self.sample_length)]
-        _waveform = np.asarray(_waveform).reshape((1,self.sample_length))
+        samples = np.asarray([np.random.choice(self.q_chans,p=_onehot[0][i]) for i in range(self.sample_length)])
+        samples = mu_law_decode(samples, self.q_chans)
+        samples = samples.reshape((1,self.sample_length))
         file_str = '{:03d}'.format(counter)
 
         save_waveform(samples,config.out_dir+'/'+file_str, title='')
@@ -222,7 +223,7 @@ class DCGAN(object):
         #     coord = tf.train.Coordinator()
         #     reader = self.load_wav(coord)
         #import IPython; IPython.embed()
-        gwave_optim = tf.train.AdamOptimizer(1e-4, beta1=config.beta1) \
+        gwave_optim = tf.train.AdamOptimizer(2e-5, beta1=config.beta1) \
                           .minimize(self.g_loss, var_list=self.gwave_vars)
         # g_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
         #                   .minimize(self.g_loss, var_list=self.g_vars)
@@ -297,6 +298,7 @@ class DCGAN(object):
                             time.time() - start_time, errG, errT))
 
                     if np.mod(counter, config.save_every) == 1:
+                        print('saving sample')
                         self.sample(counter)
                     #     #G
                     #     if config.dataset == 'wav':
