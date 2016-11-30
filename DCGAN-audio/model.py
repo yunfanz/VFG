@@ -120,7 +120,7 @@ class DCGAN(object):
                 global_scope='gwave')
             self.G = self.generator(self.z)
 
-        with tf.device('/gpu:0')
+        with tf.device('/gpu:0'):
             self.d_net = WaveNetModel(
                 batch_size=self.batch_size,
                 dilations=self.wavenet_params["dilations"],
@@ -207,6 +207,8 @@ class DCGAN(object):
         file_str = '{:03d}'.format(counter)
 
         save_waveform(samples,self.out_dir+'/'+file_str, title='')
+        wav_sum_str = tf.audio_summary('S',samples,sample_rate=self.audio_params['sample_rate'],max_outputs=10)
+        self.writer.add_summary(wav_sum_str, counter)
         im_sum = get_im_summary(samples, title=file_str)
         summary_str = self.sess.run(im_sum)
         self.writer.add_summary(summary_str, counter)
