@@ -206,12 +206,12 @@ class DCGAN(object):
         samples = samples.reshape((1,self.sample_length))
         file_str = '{:03d}'.format(counter)
 
-        save_waveform(samples,config.out_dir+'/'+file_str, title='')
+        save_waveform(samples,self.out_dir+'/'+file_str, title='')
         im_sum = get_im_summary(samples, title=file_str)
         summary_str = self.sess.run(im_sum)
         self.writer.add_summary(summary_str, counter)
         
-        save_audios(samples[0], config.out_dir+'/'+file_str+'.wav', 
+        save_audios(samples[0], self.out_dir+'/'+file_str+'.wav', 
             format='.wav', sample_rate=self.audio_params['sample_rate'])
 
 
