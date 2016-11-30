@@ -134,7 +134,7 @@ class DCGAN(object):
 
         self.G = self.generator(self.z)
         self.g_loss = self.discriminator(self.G)
-        self.t_loss = self.target_loss(with_p=False)
+        self.t_loss = self.target_gen(with_p=False)
         # self.D, self.D_logits = self.discriminator(audio_batch, include_fourier=self.use_fourier)
 
         # #self.sampler = tf.stop_gradient(self.sampler(self.z))
