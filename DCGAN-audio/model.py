@@ -4,7 +4,7 @@ import time
 from glob import glob
 import tensorflow as tf
 import numpy as np
-import json
+import json, sys
 from audio_reader import AudioReader
 from wavenet import WaveNetModel, optimizer_factory, mu_law_encode, mu_law_decode
 from ops import *
@@ -300,6 +300,8 @@ class DCGAN(object):
                     print("Epoch: [%2d] [%4d/%4d] time: %4.4f g_loss: %.6f target_loss: %.6f" \
                         % (epoch+1, idx+1, batch_idxs,
                             time.time() - start_time, errG, errT))
+                    if np.mod(counter, config.print_every) == 1:
+                        sys.stdout.flush()
 
                     if np.mod(counter, config.save_every) == 1:
                         print('saving sample')

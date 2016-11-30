@@ -12,6 +12,7 @@ from shutil import copyfile
 flags = tf.app.flags
 flags.DEFINE_integer("epoch", 1, "Epoch to train [25]")
 flags.DEFINE_integer("save_every", 100, "save sample outputs every [100]")
+flags.DEFINE_integer("print_every", 10, "how often to flush stdout [10]")
 flags.DEFINE_float("learning_rate", 0.0002, "Learning rate of for adam [0.0002]")
 flags.DEFINE_float("beta1", 0.5, "Momentum term of adam [0.5]")
 flags.DEFINE_integer("batch_size", 1, "The size of input batch waveforms [1]")
