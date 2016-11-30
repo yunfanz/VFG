@@ -73,6 +73,7 @@ class DCGAN(object):
             self.gf_dim = gf_dim
             self.df_dim = df_dim
         self.wavenet_params = wavenet_params
+        self.q_chans = self.wavenet_params["quantization_channels"]
         self.checkpoint_dir = checkpoint_dir
         self.use_disc = use_disc
         self.use_fourier = use_fourier
@@ -177,8 +178,8 @@ class DCGAN(object):
         '''generate samples from trained model'''
         self.writer = tf.train.SummaryWriter(config.out_dir+"/logs", self.sess.graph)
         for counter in range(config.gen_size):
-            batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim]) \
-                                    .astype(np.float32)
+            # batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim]) \
+            #                         .astype(np.float32)
             samples = self.sess.run(self.sampler, feed_dict={self.z: self.audio_batch.eval()})
             file_str = '{:03d}'.format(counter)
 
@@ -196,6 +197,21 @@ class DCGAN(object):
             
             save_audios(samples[0], config.out_dir+'/'+file_str+'.wav', 
                 format='.wav', sample_rate=self.audio_params['sample_rate'])
+
+    def sample(self, counter):
+        '''generate samples from trained model'''
+        _onehot = self.sess.run(self.G, feed_dict={self.z: self.audio_batch.eval()})
+        _waveform = [np.random.choice(self.q_chans,p=_onehot[0][i]) for i in range(self.sample_length)]
+        _waveform = _waveform.reshape((1,self.sample_length))
+        file_str = '{:03d}'.format(counter)
+
+        save_waveform(samples,config.out_dir+'/'+file_str, title='')
+        im_sum = get_im_summary(samples, title=file_str)
+        summary_str = self.sess.run(im_sum)
+        self.writer.add_summary(summary_str, counter)
+        
+        save_audios(samples[0], config.out_dir+'/'+file_str+'.wav', 
+            format='.wav', sample_rate=self.audio_params['sample_rate'])
 
 
 
@@ -280,7 +296,8 @@ class DCGAN(object):
                         % (epoch+1, idx+1, batch_idxs,
                             time.time() - start_time, errG, errT))
 
-                    # if np.mod(counter, config.save_every) == 1:
+                    if np.mod(counter, config.save_every) == 1:
+                        self.sample(counter)
                     #     #G
                     #     if config.dataset == 'wav':
                     #         # samples, d_loss, g_loss = self.sess.run(
