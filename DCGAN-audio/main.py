@@ -74,7 +74,7 @@ def main(_):
             FLAGS.wavenet_params=FLAGS.checkpoint_dir+'/wavenet_params.json'
 
 
-    with tf.Session(config=tf.ConfigProto(log_device_placement=False)) as sess:
+    with tf.Session(config=tf.ConfigProto(allow_soft_placement=True,log_device_placement=False)) as sess:
         #G
         if FLAGS.dataset == 'wav':
             with open(FLAGS.audio_params, 'r') as f:
