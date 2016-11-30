@@ -41,6 +41,7 @@ class DCGAN(object):
         self.z_dim = z_dim
         self.run_g = run_g
         self.c_dim = c_dim
+        self.out_dir = out_dir
 
         # batch normalization : deals with poor initialization helps gradient flow
         self.d_bn1 = batch_norm(name='d_bn1')
@@ -103,39 +104,38 @@ class DCGAN(object):
         #     self.sampler = self.sampler(self.z, self.y)
         #     self.D_, self.D_logits = self.discriminator(self.G, self.y, reuse=True)
         # else:
-        self.g_net = WaveNetModel(
-            batch_size=self.batch_size,
-            dilations=self.wavenet_params["dilations"],
-            filter_width=self.wavenet_params["filter_width"],
-            residual_channels=self.wavenet_params["residual_channels"],
-            dilation_channels=self.wavenet_params["dilation_channels"],
-            skip_channels=self.wavenet_params["skip_channels"],
-            quantization_channels=self.wavenet_params["quantization_channels"],
-            use_biases=self.wavenet_params["use_biases"],
-            scalar_input=self.wavenet_params["scalar_input"],
-            initial_filter_width=self.wavenet_params["initial_filter_width"],
-            histograms='False', 
-            global_scope='gwave')
+        with tf.device('/gpu:1'):
+            self.g_net = WaveNetModel(
+                batch_size=self.batch_size,
+                dilations=self.wavenet_params["dilations"],
+                filter_width=self.wavenet_params["filter_width"],
+                residual_channels=self.wavenet_params["residual_channels"],
+                dilation_channels=self.wavenet_params["dilation_channels"],
+                skip_channels=self.wavenet_params["skip_channels"],
+                quantization_channels=self.wavenet_params["quantization_channels"],
+                use_biases=self.wavenet_params["use_biases"],
+                scalar_input=self.wavenet_params["scalar_input"],
+                initial_filter_width=self.wavenet_params["initial_filter_width"],
+                histograms='False', 
+                global_scope='gwave')
+            self.G = self.generator(self.z)
 
-
-        self.d_net = WaveNetModel(
-            batch_size=self.batch_size,
-            dilations=self.wavenet_params["dilations"],
-            filter_width=self.wavenet_params["filter_width"],
-            residual_channels=self.wavenet_params["residual_channels"],
-            dilation_channels=self.wavenet_params["dilation_channels"],
-            skip_channels=self.wavenet_params["skip_channels"],
-            quantization_channels=self.wavenet_params["quantization_channels"],
-            use_biases=self.wavenet_params["use_biases"],
-            scalar_input=self.wavenet_params["scalar_input"],
-            initial_filter_width=self.wavenet_params["initial_filter_width"],
-            histograms='False', 
-            global_scope='wavenet')
-
-
-        self.G = self.generator(self.z)
-        self.g_loss = self.discriminator(self.G)
-        self.t_loss = self.target_gen(with_p=False)
+        with tf.device('/gpu:0')
+            self.d_net = WaveNetModel(
+                batch_size=self.batch_size,
+                dilations=self.wavenet_params["dilations"],
+                filter_width=self.wavenet_params["filter_width"],
+                residual_channels=self.wavenet_params["residual_channels"],
+                dilation_channels=self.wavenet_params["dilation_channels"],
+                skip_channels=self.wavenet_params["skip_channels"],
+                quantization_channels=self.wavenet_params["quantization_channels"],
+                use_biases=self.wavenet_params["use_biases"],
+                scalar_input=self.wavenet_params["scalar_input"],
+                initial_filter_width=self.wavenet_params["initial_filter_width"],
+                histograms='False', 
+                global_scope='wavenet')
+            self.g_loss = self.discriminator(self.G)
+            self.t_loss = self.target_gen(with_p=False)
         # self.D, self.D_logits = self.discriminator(audio_batch, include_fourier=self.use_fourier)
 
         # #self.sampler = tf.stop_gradient(self.sampler(self.z))
