@@ -202,7 +202,7 @@ class DCGAN(object):
         '''generate samples from trained model'''
         _onehot = self.sess.run(self.G, feed_dict={self.z: self.audio_batch.eval()})
         samples = np.asarray([np.random.choice(self.q_chans,p=_onehot[0][i]) for i in range(self.sample_length)])
-        samples = mu_law_decode(samples, self.q_chans)
+        samples = mu_law_decode(samples, self.q_chans).eval()
         samples = samples.reshape((1,self.sample_length))
         file_str = '{:03d}'.format(counter)
 
