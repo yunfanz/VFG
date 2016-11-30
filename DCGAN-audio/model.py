@@ -271,8 +271,8 @@ class DCGAN(object):
 
                         errG = self.g_loss.eval({self.z: self.audio_batch.eval()})
 
-                        tp, errT = self.target_gen().eval()
-                        #import IPython; IPython.embed()
+                        tp, t_loss = self.target_gen()
+                        errT = t_loss.eval() #import IPython; IPython.embed()
 
 
                     counter += 1
