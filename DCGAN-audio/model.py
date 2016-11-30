@@ -138,8 +138,8 @@ class DCGAN(object):
         self.D_, self.D_logits_ = self.discriminator(self.G, reuse=True, include_fourier=self.use_fourier)
         
         #import IPython; IPython.embed()
-        self.d_sum = tf.histogram_summary("d", self.D_logits)
-        self.d__sum = tf.histogram_summary("d_", self.D_logits_)
+        self.d_sum = tf.histogram_summary("d", self.D)
+        self.d__sum = tf.histogram_summary("d_", self.D_)
         self.G_sum = tf.audio_summary("G", self.G, sample_rate=self.audio_params['sample_rate'])
 
         # self.d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(self.D_logits, tf.ones_like(self.D)))
@@ -156,7 +156,7 @@ class DCGAN(object):
 
         self.create_vae_loss_terms()
         self.create_gan_loss_terms()
-        self.balanced_loss = 1.0 * self.g_loss + 1.0 * self.reconstr_loss # can try to weight these.
+        self.balanced_loss = 1.0 * self.g_loss + 1.0 * self.reconstr_loss/self.x_dim  # can try to weight these.
 
         self.t_vars = tf.trainable_variables()
 
