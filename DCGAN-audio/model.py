@@ -48,6 +48,10 @@ class DCGAN(object):
         self.c_dim = c_dim
         self.model_name = model_name
         # batch normalization : deals with poor initialization helps gradient flow
+        self.q_bn1 = batch_norm(name='q_bn1')
+        self.q_bn2 = batch_norm(name='q_bn2')
+        self.q_bn3 = batch_norm(name='q_bn3')
+        self.q_bn4 = batch_norm(name='q_bn4')
         self.d_bn1 = batch_norm(name='d_bn1')
         self.d_bn2 = batch_norm(name='d_bn2')
         self.d_bn3 = batch_norm(name='d_bn3')
@@ -109,7 +113,8 @@ class DCGAN(object):
         # Use recognition network to determine mean and
         # (log) variance of Gaussian distribution in latent
         # space
-        self.z_mean, self.z_log_sigma_sq = self.encoder()
+        #self.z_mean, self.z_log_sigma_sq = self.encoder()
+        self.z_mean, self.z_log_sigma_sq = self.conv_encoder()
         #self.z_mean, self.z_sigma_sq = self.encoder()
 
         # Draw one sample z from Gaussian distribution
@@ -218,7 +223,19 @@ class DCGAN(object):
         #import IPython; IPython.embed()
         return x_vec
 
-    
+    def conv_encoder(self):
+        h5_dim = self.sample_length*self.df_dim//64
+
+        h0 = lrelu(conv1d(self.audio_batch, self.df_dim, name='q_h0_conv'))
+        h1 = lrelu(self.q_bn1(conv1d(h0, self.df_dim*2, name='q_h1_conv')))
+        h2 = lrelu(self.q_bn2(conv1d(h1, self.df_dim*4, name='q_h2_conv')))
+        h3 = lrelu(self.q_bn3(conv1d(h2, self.df_dim*8, name='q_h3_conv')))
+        h4 = lrelu(self.q_bn4(conv1d(h3, self.df_dim*16, name='q_h4_conv')))
+        z_mean = linear(tf.reshape(h4, [self.batch_size, -1]), self.z_dim, name='q_mean_lin',missing_dim=h5_dim)
+        z_log_sigma_sq = linear(tf.reshape(h4, [self.batch_size, -1]), self.z_dim, name='q_sig_lin',missing_dim=h5_dim)
+
+        return (z_mean, z_log_sigma_sq)
+
     def encoder(self):
         # Generate probabilistic encoder (recognition network), which
         # maps inputs onto a normal distribution in latent space.
