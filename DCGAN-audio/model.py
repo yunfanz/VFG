@@ -202,7 +202,7 @@ class DCGAN(object):
         '''generate samples from trained model'''
         _onehot = self.sess.run(self.G, feed_dict={self.z: self.audio_batch.eval()})
         _waveform = [np.random.choice(self.q_chans,p=_onehot[0][i]) for i in range(self.sample_length)]
-        _waveform = _waveform.reshape((1,self.sample_length))
+        _waveform = np.asarray(_waveform).reshape((1,self.sample_length))
         file_str = '{:03d}'.format(counter)
 
         save_waveform(samples,config.out_dir+'/'+file_str, title='')
