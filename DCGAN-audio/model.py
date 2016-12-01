@@ -330,7 +330,7 @@ class DCGAN(object):
         #     reader = self.load_wav(coord)
         #import IPython; IPython.embed()
 
-        import IPython; IPython.embed()
+        #import IPython; IPython.embed()
         init = tf.initialize_all_variables()
         self.sess.run(init)
         # self.sess.run(self.d_net.init_ops)
@@ -386,9 +386,9 @@ class DCGAN(object):
                         #     feed_dict={ self.z: batch_z })
                         # self.writer.add_summary(summary_str, counter)
 
-                        _, summary_str = self.sess.run([v_optim, self.v_sum])
+                        _, summary_str = self.sess.run([self.v_optim, self.v_sum])
                         self.writer.add_summary(summary_str, counter)
-                        _, summary_str = self.sess.run([gen_optim, self.w_sum])
+                        _, summary_str = self.sess.run([self.gen_optim, self.w_sum])
                         self.writer.add_summary(summary_str, counter)
                         errV = self.vae_loss.eval()
                         errG = self.g_loss.eval()
