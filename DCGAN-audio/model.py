@@ -114,6 +114,8 @@ class DCGAN(object):
         
         self.net_in = self.decoder(self.z)
         self.G = self.generator(self.net_in)
+        # self.V_logit = tf.log(self.net_in/(1-self.net_in))
+        # self.W_logit = tf.log(self.G/(1-self.))
         self.sampler = self.generator(self.decoder(self.z, reuse=True))
         self.batch_vae_flatten = tf.reshape(self.net_in, [self.batch_size, -1])
         self.batch_wave_flatten = tf.reshape(self.G, [self.batch_size, -1])
@@ -188,8 +190,8 @@ class DCGAN(object):
         self.saver = tf.train.Saver()
     def create_loss_terms(self):
 
-        self.vae_r_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(self.net_in, self.hot_batch))
-        self.wave_r_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(self.G, self.hot_batch))
+        self.vae_r_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(self.net_in, self.hot_batch))
+        self.wave_r_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(self.G, self.hot_batch))
         self.latent_loss = -0.5 * tf.reduce_mean(1 + self.z_log_sigma_sq - tf.square(self.z_mean)
                                            - tf.exp(self.z_log_sigma_sq), 1)
         self.vae_loss = tf.reduce_mean(self.vae_r_loss + self.latent_loss) #/ self.x_dim 
@@ -307,16 +309,16 @@ class DCGAN(object):
         h7 = tf.nn.relu(self.g_bn7(h7, train=tr))
         h8, self.h8_w, self.h8_b = deconv1d(h7,
             [self.batch_size, s, self.q_chans], d_w=2, name='g_h8', with_w=True)
-        h_norm = tf.reduce_sum(h8, 2, keep_dims=True)
-        h_prob = h8/h_norm 
-        return h_prob
+        #h_norm = tf.reduce_sum(h8, 2, keep_dims=True)
+        #h_prob = h8/h_norm 
+        return h8
 
     def generator(self, x, y=None):
 
-        h_prob = tf.exp(self.g_net.run(x, encoded=True))
-        h_norm = tf.reduce_sum(h_prob, 2, keep_dims=True)
-        h_prob = h_prob/h_norm 
-        return h_prob
+        h_logits = self.g_net.run(x, encoded=True)
+        # h_norm = tf.reduce_sum(h_prob, 2, keep_dims=True)
+        # h_prob = h_prob/h_norm 
+        return h_logits
 
 
 
