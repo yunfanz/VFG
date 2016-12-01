@@ -86,7 +86,7 @@ def conv1d(input_, output_dim,
         return conv
 
 def deconv1d(input_, output_shape,
-             k_w=9, d_w=4, stddev=0.02,
+             k_w=5, d_w=4, stddev=0.02,
             name="deconv1d", with_w=False):
     """Computes a filtered convolution across a 3-D input tensor."""
     with tf.variable_scope(name):
@@ -99,8 +99,10 @@ def deconv1d(input_, output_shape,
         biases = tf.get_variable('biases', [output_shape[-1]], initializer=tf.constant_initializer(0.0))
 
         deconv = tf.reshape(deconv, output_shape)
+        print(name, deconv.get_shape())
         deconv = tf.squeeze(deconv, [0]) #removes the first dummy dimension
         deconv = tf.reshape(tf.nn.bias_add(deconv, biases), deconv.get_shape())
+
 
         if with_w:
             return deconv, w, biases
@@ -158,8 +160,9 @@ def gram_mat(input_):
     """
     shape = input_.get_shape().as_list()
     print("The shape is {0}".format(shape))
-    rfh, rfw, rfd = shape
+    #rfh, rfw, rfd = shape
+    input_tf = input_[0]
     gram = tf.matmul(tf.transpose(input_tf), input_tf)
-    print(input_.get_shape().as_list())
+    #print(input_.get_shape().as_list())
     return gram
     

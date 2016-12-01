@@ -147,17 +147,17 @@ class DCGAN(object):
 			real_fourier_feat = real_fourier_feats[self.fm_layer]
 			fake_fourier_feat = fake_fourier_feats[self.fm_layer]
 
-			fake_features = tf.reduce_mean(fake_feat)
-			real_features = tf.reduce_mean(real_feat)
-			self.g_fm_loss = tf.nn.l2_loss(real_features - fake_features)
-			tf.add_to_collection('g_losses', self.g_fm_loss)
+			# fake_features = tf.reduce_mean(fake_feat)
+			# real_features = tf.reduce_mean(real_feat)
+			self.g_fm_loss = tf.reduce_mean(tf.squared_difference(real_feat, fake_feat))
+			if False: tf.add_to_collection('g_losses', self.g_fm_loss)
 			self.g_fm_loss_sum = tf.scalar_summary("g_fm_loss", self.g_fm_loss)
 			
 			if self.use_fourier:
-				fake_fourier_features = tf.reduce_mean(fake_feat)
-				real_fourier_features = tf.reduce_mean(real_feat)
-				self.g_fm_fourier_loss = tf.nn.l2_loss(real_fourier_features - fake_fourier_features)
-				tf.add_to_collection('g_losses', self.g_fm_fourier_loss)
+				# fake_fourier_features = tf.reduce_mean(fake_feat)
+				# real_fourier_features = tf.reduce_mean(real_feat)
+				self.g_fm_fourier_loss = tf.reduce_mean(tf.squared_difference(real_fourier_feat, fake_fourier_feat))
+				if False: tf.add_to_collection('g_losses', self.g_fm_fourier_loss)
 				self.g_fm_fourier_loss_sum = tf.scalar_summary("g_fm_fourier_loss", self.g_fm_fourier_loss)
 		
 		if self.gram is None:
@@ -169,7 +169,7 @@ class DCGAN(object):
 			# print("the shape of fake_feat: " + str(tf.shape(fake_feat)))
 			real_feat_gram = gram_mat(real_feat)
 			fake_feat_gram = gram_mat(fake_feat)
-			self.g_gram_loss = tf.nn.l2_loss(real_feat_gram - fake_feat_gram)
+			self.g_gram_loss = tf.reduce_mean(tf.squared_difference(real_feat_gram, fake_feat_gram))
 			tf.add_to_collection('g_losses', self.g_gram_loss)
 			self.g_gram_loss_sum = tf.scalar_summary("g_gram_loss", self.g_gram_loss)
 
@@ -178,7 +178,8 @@ class DCGAN(object):
 				print("the shape of fake_fourier_feat: " + str(tf.shape(fake_fourier_feat)))
 				real_fourier_feat_gram = gram_mat(real_fourier_feat)
 				fake_fourier_feat_gram = gram_mat(fake_fourier_feat)
-				self.g_gram_fourier_loss = tf.nn.l2_loss(real_fourier_feat_gram - fake_fourier_feat_gram)
+				#self.g_gram_fourier_loss = tf.nn.l2_loss(real_fourier_feat_gram - fake_fourier_feat_gram)
+				self.g_gram_fourier_loss = tf.reduce_mean(tf.squared_difference(real_fourier_feat_gram, fake_fourier_feat_gram))
 				tf.add_to_collection('g_losses', self.g_gram_fourier_loss)
 				self.g_gram_fourier_loss_sum = tf.scalar_summary("g_gram_fourier_loss", self.g_gram_fourier_loss)
 				  
@@ -259,7 +260,7 @@ class DCGAN(object):
 		if config.dataset == 'wav':
 			coord = tf.train.Coordinator()
 			reader = self.load_wav(coord)
-
+		#import IPython; IPython.embed()
 		# @F
 		d_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
 						  .minimize(self.losses['d'], var_list=self.d_vars)
