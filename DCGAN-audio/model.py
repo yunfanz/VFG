@@ -386,32 +386,32 @@ class DCGAN(object):
         sh = [s//2, s//4, s//8, s//16, s//32, int(s/32/4**1), int(s/32/4**2), int(s/32/4**3)]
 
         # project `z` and reshape
-        self.z_ = linear(z, self.gf_dim*128*sh[-1], 'g_h0_lin')
+        self.z_ = linear(z, self.gf_dim*16*sh[-1], 'g_h0_lin')
 
-        self.h0 = tf.reshape(self.z_, [-1, sh[-1], self.gf_dim * 128])
+        self.h0 = tf.reshape(self.z_, [-1, sh[-1], self.gf_dim * 16])
         h0 = tf.nn.relu(self.g_bn0(self.h0, train=False))
 
         self.h1 = deconv1d(h0, 
-            [self.batch_size, sh[-2], self.gf_dim*64], d_w=4, name='g_h1')
+            [self.batch_size, sh[-2], self.gf_dim*8], d_w=4, name='g_h1')
         h1 = tf.nn.relu(self.g_bn1(self.h1, train=False))
 
         h2 = deconv1d(h1,
-            [self.batch_size, sh[-3], self.gf_dim*32], d_w=4, name='g_h2')
+            [self.batch_size, sh[-3], self.gf_dim*4], d_w=4, name='g_h2')
         h2 = tf.nn.relu(self.g_bn2(h2, train=False))
 
         h3 = deconv1d(h2,
-            [self.batch_size, sh[-4], self.gf_dim*16], d_w=4, name='g_h3')
+            [self.batch_size, sh[-4], self.gf_dim*2], d_w=4, name='g_h3')
         h3 = tf.nn.relu(self.g_bn3(h3, train=False))
 
         h4 = deconv1d(h3,
-            [self.batch_size, sh[-5], self.gf_dim*8], d_w=2, name='g_h4')
+            [self.batch_size, sh[-5], self.gf_dim*1], d_w=2, name='g_h4')
         h4 = tf.nn.relu(self.g_bn4(h4, train=False))
 
         h5 = deconv1d(h4,
-            [self.batch_size, sh[-6], self.gf_dim*4], d_w=2, name='g_h5')
+            [self.batch_size, sh[-6], self.gf_dim*1], d_w=2, name='g_h5')
         h5 = tf.nn.relu(self.g_bn5(h5, train=False))
         h6 = deconv1d(h5,
-            [self.batch_size, sh[-7], self.gf_dim*2], d_w=2, name='g_h6')
+            [self.batch_size, sh[-7], self.gf_dim*1], d_w=2, name='g_h6')
         h6 = tf.nn.relu(self.g_bn6(h6, train=False))
 
         h7 = deconv1d(h6,
