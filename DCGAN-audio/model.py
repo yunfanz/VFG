@@ -307,7 +307,7 @@ class DCGAN(object):
     def discriminator(self, audio_sample, y=None, reuse=False, include_fourier=True):
         if reuse:
             tf.get_variable_scope().reuse_variables()
-        h_dim = self.sample_length*self.df_dim//32
+        h_dim = self.sample_length*self.df_dim//16
 
         h0 = lrelu(conv1d(audio_sample,  self.df_dim, d_w=1, name='d_h0_conv'))
         h1 = lrelu(self.d_bn1(conv1d(h0, self.df_dim*2, name='d_h1_conv')))
