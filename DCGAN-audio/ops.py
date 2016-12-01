@@ -74,7 +74,9 @@ def conv1d(input_, output_dim,
     """Conputes a 1-D Convolution across a 3-D input"""
     with tf.variable_scope(name):
         w = tf.get_variable('w', [k_w, input_.get_shape()[-1], output_dim],
-                            initializer=tf.truncated_normal_initializer(stddev=stddev))
+                            initializer=tf.contrib.layers.xavier_initializer(uniform=True))
+                            #initializer=tf.truncated_normal_initializer(stddev=stddev))
+
         conv = tf.nn.conv1d(input_, w, stride=d_w, padding='SAME')
 
         biases = tf.get_variable('biases', [output_dim], initializer=tf.constant_initializer(0.0))
@@ -92,7 +94,8 @@ def deconv1d(input_, output_shape,
     with tf.variable_scope(name):
     # filter : [height, width, output_channels, in_channels]
         w = tf.get_variable(name='w', shape=[1, k_w, output_shape[-1], input_.get_shape()[-1]],
-                           initializer=tf.random_normal_initializer(stddev=stddev))
+                            initializer=tf.contrib.layers.xavier_initializer(uniform=False))
+                           #initializer=tf.random_normal_initializer(stddev=stddev))
         output_shape.insert(0,1)
         input_ = tf.expand_dims(input_, 0)
         deconv = tf.nn.conv2d_transpose(input_, filter=w, output_shape=output_shape, strides=[1, 1, d_w, 1])
@@ -142,7 +145,8 @@ def linear(input_, output_length, name=None, stddev=0.02, bias_start=0.0, with_w
     if missing_dim < 0: missing_dim = shape[-1]
     with tf.variable_scope(name or "Linear"):
         matrix = tf.get_variable("Matrix", [missing_dim, output_length], tf.float32,
-                                 tf.random_normal_initializer(stddev=stddev))
+                                initializer=tf.contrib.layers.xavier_initializer(uniform=False))
+                                 #tf.random_normal_initializer(stddev=stddev))
         bias = tf.get_variable("bias", [output_length],
             initializer=tf.constant_initializer(bias_start))
         if with_w:
