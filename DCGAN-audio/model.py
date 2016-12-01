@@ -309,7 +309,7 @@ class DCGAN(object):
             tf.get_variable_scope().reuse_variables()
         h_dim = self.sample_length*self.df_dim//32
 
-        h0 = lrelu(conv1d(audio_sample, d_w=1, self.df_dim, name='d_h0_conv'))
+        h0 = lrelu(conv1d(audio_sample,  self.df_dim, d_w=1, name='d_h0_conv'))
         h1 = lrelu(self.d_bn1(conv1d(h0, self.df_dim*2, name='d_h1_conv')))
         h2 = lrelu(self.d_bn2(conv1d(h1, self.df_dim*4, name='d_h2_conv')))
         h3 = lrelu(self.d_bn3(conv1d(h2, self.df_dim*8, name='d_h3_conv')))
@@ -323,7 +323,7 @@ class DCGAN(object):
 
         if include_fourier:
             fourier_sample = get_fourier(audio_sample)
-            h0_f = lrelu(conv1d(fourier_sample, d_w=1, self.df_dim, name='d_h0_f_conv'))
+            h0_f = lrelu(conv1d(fourier_sample, self.df_dim, d_w=1, name='d_h0_f_conv'))
             h1_f = lrelu(self.d_bn1f(conv1d(h0_f, self.df_dim*2, name='d_h1_f_conv')))
             h2_f = lrelu(self.d_bn2f(conv1d(h1_f, self.df_dim*4, name='d_h2_f_conv')))
             h3_f = lrelu(self.d_bn3f(conv1d(h2_f, self.df_dim*8, name='d_h3_f_conv')))
