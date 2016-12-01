@@ -66,7 +66,21 @@ def _save_wav(waveform, filename, sample_rate):
     '''
     y = np.array(waveform)
     librosa.output.write_wav(filename, y, sample_rate)
+def one_hot(input_batch, batch_size, quantization_channels):
+    '''One-hot encodes the waveform amplitudes.
 
+    This allows the definition of the network as a categorical distribution
+    over a finite set of possible amplitudes.
+    '''
+    with tf.name_scope('one_hot_encode'):
+        encoded = tf.one_hot(
+            input_batch,
+            depth=quantization_channels,
+            dtype=tf.float32)
+        shape = [batch_size, -1, quantization_channels]
+        encoded = tf.reshape(encoded, shape)
+    return encoded
+    
 def encode(samples):
     ''' Convert samples from int16 to float32 format'''
     with tf.name_scope('int16_to_float32'):
