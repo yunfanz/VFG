@@ -4,9 +4,9 @@
 	"beta1": 0.5,
     "sample_rate": 8000,
     "silence_threshold": 0.3,
-    "z_dim": 8192,
+    "z_dim": 100,
     "sample_length": 8192,
     "num_per_epoch":50000,
     "gf_dim": 256, 
-    "df_dim": 256,
+    "df_dim": 256
 }
