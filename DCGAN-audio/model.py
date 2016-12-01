@@ -241,7 +241,7 @@ class DCGAN(object):
     def sample(self, counter):
         '''generate samples from trained model'''
         tf.get_variable_scope().reuse_variables()
-        _onehot = self.sess.run(self.sampler)
+        _onehot = self.sess.run(tf.nn.softmax(self.sampler)) #or sigmoid
         samples = np.asarray([np.random.choice(self.q_chans,p=_onehot[0][i]) for i in range(self.sample_length)])
         samples = mu_law_decode(samples, self.q_chans).eval()
         samples = samples.reshape((1,self.sample_length))
