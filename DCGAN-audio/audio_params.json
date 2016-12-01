@@ -7,8 +7,6 @@
     "z_dim": 8192,
     "sample_length": 8192,
     "num_per_epoch":50000,
-    "gf_dim": 128, 
-    "df_dim": 128,
-    "gfc_dim": 1024,
-    "dfc_dim": 1024
+    "gf_dim": 256, 
+    "df_dim": 256,
 }
