@@ -92,7 +92,7 @@ class DCGAN(object):
 		# @F: feature matching
 		self.fm_layer = fm_layer
 		# assert ((self.fm_layer is None) or (type(self.fm_layer) == int))
-		self.gram = gram
+		self.gram = 1
 		self.losses = {'g': None, 'd': None}
 		self.G_num_layers = G_num_layers
 		self.D_num_layers = D_num_layers
@@ -167,19 +167,19 @@ class DCGAN(object):
 			# currently only matching one layer - fm_layer
 			# print("the shape of real_feat: " + str(tf.shape(real_feat)))
 			# print("the shape of fake_feat: " + str(tf.shape(fake_feat)))
-			real_feat_gram = gram_mat(real_feat)
-			fake_feat_gram = gram_mat(fake_feat)
-			self.g_gram_loss = tf.reduce_mean(tf.squared_difference(real_feat_gram, fake_feat_gram))
+			self.gram = gram_mat(real_feat)
+			self.gram_ = gram_mat(fake_feat)
+			self.g_gram_loss = tf.reduce_mean(tf.squared_difference(self.gram, self.gram_))
 			tf.add_to_collection('g_losses', self.g_gram_loss)
 			self.g_gram_loss_sum = tf.scalar_summary("g_gram_loss", self.g_gram_loss)
 
 			if self.use_fourier:
 				print("the shape of real_fourier_feat: " + str(tf.shape(real_fourier_feat)))
 				print("the shape of fake_fourier_feat: " + str(tf.shape(fake_fourier_feat)))
-				real_fourier_feat_gram = gram_mat(real_fourier_feat)
-				fake_fourier_feat_gram = gram_mat(fake_fourier_feat)
+				self.gram_f = gram_mat(real_fourier_feat)
+				self.gram_f_ = gram_mat(fake_fourier_feat)
 				#self.g_gram_fourier_loss = tf.nn.l2_loss(real_fourier_feat_gram - fake_fourier_feat_gram)
-				self.g_gram_fourier_loss = tf.reduce_mean(tf.squared_difference(real_fourier_feat_gram, fake_fourier_feat_gram))
+				self.g_gram_fourier_loss = tf.reduce_mean(tf.squared_difference(self.gram_f, self.gram_f_))
 				tf.add_to_collection('g_losses', self.g_gram_fourier_loss)
 				self.g_gram_fourier_loss_sum = tf.scalar_summary("g_gram_fourier_loss", self.g_gram_fourier_loss)
 				  
@@ -338,7 +338,7 @@ class DCGAN(object):
 					if config.dataset == 'wav':
 						audio_batch = reader.dequeue(self.batch_size) 
 						audio_batch = audio_batch.eval()
-						import IPython; IPython.embed()
+						
 						# Update D network
 						_, summary_str = self.sess.run([d_optim, self.d_sum],
 							feed_dict={ self.audio_samples: audio_batch, self.z: batch_z })
@@ -422,6 +422,7 @@ class DCGAN(object):
 
 
 					if np.mod(counter, config.save_every) == 1:
+						import IPython; IPython.embed()
 						#G
 						if config.dataset == 'wav':
 							# samples, d_loss, g_loss = self.sess.run(
