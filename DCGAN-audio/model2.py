@@ -56,7 +56,7 @@ class DCGAN(object):
 		self.d_bn2 = batch_norm(name='d_bn2')
 		self.d_bn3 = batch_norm(name='d_bn3')
 		
-		if True:
+		if use_fourier:
 			self.d_bn1f = batch_norm(name='d_bn1f')
 			self.d_bn2f = batch_norm(name='d_bn2f')
 			self.d_bn3f = batch_norm(name='d_bn3f')
