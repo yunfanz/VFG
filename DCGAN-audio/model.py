@@ -50,6 +50,7 @@ class DCGAN(object):
         self.z_dim = z_dim
         self.run_g = run_g
         self.c_dim = c_dim
+        self.q_chans = 256
 
         # batch normalization : deals with poor initialization helps gradient flow
         self.d_bn1 = batch_norm(name='d_bn1')
@@ -106,6 +107,8 @@ class DCGAN(object):
             self.coord = tf.train.Coordinator()
             self.reader = self.load_wav(self.coord)
             audio_batch = self.reader.dequeue(self.batch_size)
+            input_batch = mu_law_encode(self.audio_batch, self.q_chans)
+            self.hot_batch = one_hot(input_batch, self.batch_size, self.q_chans)
             #import IPython; IPython.embed()
 
         self.z = tf.placeholder(tf.float32, [None, self.z_dim],
@@ -122,7 +125,7 @@ class DCGAN(object):
         #     self.D_, self.D_logits = self.discriminator(self.G, self.y, reuse=True)
         # else:
         self.G = self.generator(self.z)
-        self.D, self.D_logits = self.discriminator(audio_batch, include_fourier=self.use_fourier)
+        self.D, self.D_logits = self.discriminator(self.hot_batch, include_fourier=self.use_fourier)
 
         self.sampler = self.sampler(self.z)
         self.D_, self.D_logits_ = self.discriminator(self.G, reuse=True, include_fourier=self.use_fourier)
