@@ -36,6 +36,15 @@ def save_waveform(waveform, filename, title=None, maxplot=4):
       ax = plt.subplot(num_plot,1,j+1)
       ax.plot(waveform[j])
     plt.savefig(filename)
+
+#G
+def save_feat(feat, feat_, filename, title=None):
+    f, (ax1, ax2) = plt.subplots(1,2)
+    if title:
+      plt.title(title)
+    ax1.imshow(feat, interpolation='nearest')
+    ax2.imshow(feat_, interpolation='nearest')
+    plt.savefig(filename)
 #G
 def get_im_summary(waveform, title=None, maxplot=4):
     num_plot = min(maxplot, waveform.shape[0])
