@@ -24,7 +24,6 @@ class DCGAN(object):
 				 fm_layer=None, gram=None,
 				 G_num_layers=5, D_num_layers=5):
 		"""
-
 		Args:
 			sess: TensorFlow session
 			batch_size: The size of batch. Should be specified before training.
@@ -151,14 +150,16 @@ class DCGAN(object):
 			# fake_features = tf.reduce_mean(fake_feat)
 			# real_features = tf.reduce_mean(real_feat)
 			self.g_fm_loss = tf.reduce_mean(tf.squared_difference(real_feat, fake_feat))
-			if False: tf.add_to_collection('g_losses', self.g_fm_loss)
+			if False:
+                            tf.add_to_collection('g_losses', self.g_fm_loss)
 			self.g_fm_loss_sum = tf.scalar_summary("g_fm_loss", self.g_fm_loss)
 			
 			if self.use_fourier:
 				# fake_fourier_features = tf.reduce_mean(fake_feat)
 				# real_fourier_features = tf.reduce_mean(real_feat)
 				self.g_fm_fourier_loss = tf.reduce_mean(tf.squared_difference(real_fourier_feat, fake_fourier_feat))
-				if False: tf.add_to_collection('g_losses', self.g_fm_fourier_loss)
+				if False:
+                                    tf.add_to_collection('g_losses', self.g_fm_fourier_loss)
 				self.g_fm_fourier_loss_sum = tf.scalar_summary("g_fm_fourier_loss", self.g_fm_fourier_loss)
 		
 		if self.gram is None:
@@ -503,13 +504,6 @@ class DCGAN(object):
 		'''
 		# @F note: fm_layer == 0 --> h0 ...
 		fm_layer = self.fm_layer
-
-		# @F: no feature matching
-		if fm_layer == None:
-			# note only intermediate layer feature matching is supported
-			print('Not using feature matching... since fm_layer is:' \
-					+ str(fm_layer))
-			return self.discriminator(image, y=y, reuse=reuse, include_fourier=include_fourier)
 
 		if reuse:
 			tf.get_variable_scope().reuse_variables()
