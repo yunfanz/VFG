@@ -86,7 +86,7 @@ def conv1d(input_, output_dim,
         return conv
 
 def deconv1d(input_, output_shape,
-             k_w=5, d_w=4, stddev=0.02,
+             k_w=5, d_w=2, stddev=0.02,
             name="deconv1d", with_w=False):
     """Computes a filtered convolution across a 3-D input tensor."""
     with tf.variable_scope(name):
