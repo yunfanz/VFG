@@ -570,7 +570,7 @@ class DCGAN(object):
 		else:
 			return tf.nn.sigmoid(h5), h5, hs, None
 
-	def generator(self, z, y=None):
+    def generator(self, z, y=None):
 
         s = self.output_length
 
