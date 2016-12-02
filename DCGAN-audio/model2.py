@@ -155,14 +155,14 @@ class DCGAN(object):
 			# fake_features = tf.reduce_mean(fake_feat)
 			# real_features = tf.reduce_mean(real_feat)
 			self.g_fm_loss = tf.reduce_mean(tf.squared_difference(self.feat, self.feat_))
-			if True: tf.add_to_collection('g_losses', self.g_fm_loss)
+			if False: tf.add_to_collection('g_losses', self.g_fm_loss)
 			self.g_fm_loss_sum = tf.scalar_summary("g_fm_loss", self.g_fm_loss)
 			
 			if self.use_fourier:
 				# fake_fourier_features = tf.reduce_mean(fake_feat)
 				# real_fourier_features = tf.reduce_mean(real_feat)
 				self.g_fm_fourier_loss = tf.reduce_mean(tf.squared_difference(self.feat_f, self.feat_f_))
-				if True: tf.add_to_collection('g_losses', self.g_fm_fourier_loss)
+				if False: tf.add_to_collection('g_losses', self.g_fm_fourier_loss)
 				self.g_fm_fourier_loss_sum = tf.scalar_summary("g_fm_fourier_loss", self.g_fm_fourier_loss)
 		
 		if self.gram is None:

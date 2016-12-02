@@ -161,7 +161,7 @@ def gram_mat(input_):
     print("The shape is {0}".format(shape))
     rfh, rfw, rfd = shape
     input_tf = input_[0]
-    gram = tf.matmul(tf.transpose(input_tf), input_tf)/rfw
+    gram = tf.matmul(tf.transpose(input_tf), input_tf)/rfw*10
     #print(input_.get_shape().as_list())
     return gram
     
