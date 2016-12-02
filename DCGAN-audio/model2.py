@@ -144,8 +144,9 @@ class DCGAN(object):
 
 			real_feat = real_feats[self.fm_layer]
 			fake_feat = fake_feats[self.fm_layer]
-			real_fourier_feat = real_fourier_feats[self.fm_layer]
-			fake_fourier_feat = fake_fourier_feats[self.fm_layer]
+                        if self.use_fourier:
+                	    real_fourier_feat = real_fourier_feats[self.fm_layer]
+	       		    fake_fourier_feat = fake_fourier_feats[self.fm_layer]
 
 			# fake_features = tf.reduce_mean(fake_feat)
 			# real_features = tf.reduce_mean(real_feat)
@@ -555,7 +556,8 @@ class DCGAN(object):
 			h5 = h4
 			#import IPython; IPython.embed()
 		hs.append(h5)
-		hsf.append(h5)
+                if include_fourier:
+		    hsf.append(h5)
 
 		if include_fourier:
 			return tf.nn.sigmoid(h5), h5, hs, hsf
@@ -577,18 +579,18 @@ class DCGAN(object):
 			[self.batch_size, s8, self.gf_dim*4], name='g_h1', with_w=True)
 		h1 = tf.nn.relu(self.g_bn1(self.h1))
 
-		h2, self.h2_w, self.h2_b = deconv1d(h1,
+		self.h2, self.h2_w, self.h2_b = deconv1d(h1,
 			[self.batch_size, s4, self.gf_dim*2], name='g_h2', with_w=True)
-		h2 = tf.nn.relu(self.g_bn2(h2))
+		h2 = tf.nn.relu(self.g_bn2(self.h2))
 
-		h3, self.h3_w, self.h3_b = deconv1d(h2,
+		self.h3, self.h3_w, self.h3_b = deconv1d(h2,
 			[self.batch_size, s2, self.gf_dim*1], name='g_h3', with_w=True)
-		h3 = tf.nn.relu(self.g_bn3(h3))
+		h3 = tf.nn.relu(self.g_bn3(self.h3))
 
-		h4, self.h4_w, self.h4_b = deconv1d(h3,
+		self.h4, self.h4_w, self.h4_b = deconv1d(h3,
 			[self.batch_size, s, self.c_dim], name='g_h4', with_w=True)
 
-		return tf.nn.tanh(h4)
+		return tf.nn.tanh(self.h4)
 
 	def sampler(self, z, y=None):
 		tf.get_variable_scope().reuse_variables()
