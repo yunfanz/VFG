@@ -167,17 +167,17 @@ class DCGAN(object):
 			# currently only matching one layer - fm_layer
 			# print("the shape of real_feat: " + str(tf.shape(real_feat)))
 			# print("the shape of fake_feat: " + str(tf.shape(fake_feat)))
-			self.gram = gram_mat(real_feat)
-			self.gram_ = gram_mat(fake_feat)
+			self.gram = gram_mat(self.feat)
+			self.gram_ = gram_mat(self.feat_)
 			self.g_gram_loss = tf.reduce_mean(tf.squared_difference(self.gram, self.gram_))
 			tf.add_to_collection('g_losses', self.g_gram_loss)
 			self.g_gram_loss_sum = tf.scalar_summary("g_gram_loss", self.g_gram_loss)
 
 			if self.use_fourier:
-				print("the shape of real_fourier_feat: " + str(tf.shape(real_fourier_feat)))
-				print("the shape of fake_fourier_feat: " + str(tf.shape(fake_fourier_feat)))
-				self.gram_f = gram_mat(real_fourier_feat)
-				self.gram_f_ = gram_mat(fake_fourier_feat)
+				print("the shape of real_fourier_feat: " + str(tf.shape(self.feat_f)))
+				#print("the shape of fake_fourier_feat: " + str(tf.shape(self.feat_f_)))
+				self.gram_f = gram_mat(self.feat_f)
+				self.gram_f_ = gram_mat(self.feat_f_)
 				#self.g_gram_fourier_loss = tf.nn.l2_loss(real_fourier_feat_gram - fake_fourier_feat_gram)
 				self.g_gram_fourier_loss = tf.reduce_mean(tf.squared_difference(self.gram_f, self.gram_f_))
 				tf.add_to_collection('g_losses', self.g_gram_fourier_loss)
