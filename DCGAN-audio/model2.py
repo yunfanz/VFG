@@ -338,6 +338,7 @@ class DCGAN(object):
 					if config.dataset == 'wav':
 						audio_batch = reader.dequeue(self.batch_size) 
 						audio_batch = audio_batch.eval()
+						import IPython; IPython.embed()
 						# Update D network
 						_, summary_str = self.sess.run([d_optim, self.d_sum],
 							feed_dict={ self.audio_samples: audio_batch, self.z: batch_z })
