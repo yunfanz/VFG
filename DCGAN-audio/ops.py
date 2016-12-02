@@ -94,7 +94,7 @@ def deconv1d(input_, output_shape,
     with tf.variable_scope(name):
     # filter : [height, width, output_channels, in_channels]
         w = tf.get_variable(name='w', shape=[1, k_w, output_shape[-1], input_.get_shape()[-1]],
-                            initializer=tf.contrib.layers.xavier_initializer(uniform=False))
+                            initializer=tf.contrib.layers.xavier_initializer(uniform=True))
                            #initializer=tf.random_normal_initializer(stddev=stddev))
         output_shape.insert(0,1)
         input_ = tf.expand_dims(input_, 0)
@@ -145,7 +145,7 @@ def linear(input_, output_length, name=None, stddev=0.02, bias_start=0.0, with_w
     if missing_dim < 0: missing_dim = shape[-1]
     with tf.variable_scope(name or "Linear"):
         matrix = tf.get_variable("Matrix", [missing_dim, output_length], tf.float32,
-                                initializer=tf.contrib.layers.xavier_initializer(uniform=False))
+                                initializer=tf.contrib.layers.xavier_initializer(uniform=True))
                                  #tf.random_normal_initializer(stddev=stddev))
         bias = tf.get_variable("bias", [output_length],
             initializer=tf.constant_initializer(bias_start))
