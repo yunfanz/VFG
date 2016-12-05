@@ -161,7 +161,7 @@ class DCGAN(object):
 
         self.create_vae_loss_terms()
         self.create_gan_loss_terms()
-        self.balanced_loss = 1.5 * self.g_loss + 0.5* self.reconstr_loss  # can try to weight these.
+        self.balanced_loss = 1.5 * self.g_loss + 0.4* self.reconstr_loss  # can try to weight these.
 
         self.t_vars = tf.trainable_variables()
 
