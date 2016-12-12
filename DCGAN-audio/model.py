@@ -55,10 +55,12 @@ class DCGAN(object):
         self.d_bn1 = batch_norm(name='d_bn1')
         self.d_bn2 = batch_norm(name='d_bn2')
         self.d_bn3 = batch_norm(name='d_bn3')
+        self.d_bn4 = batch_norm(name='d_bn4')
         if True:
             self.d_bn1f = batch_norm(name='d_bn1f')
             self.d_bn2f = batch_norm(name='d_bn2f')
             self.d_bn3f = batch_norm(name='d_bn3f')
+            self.d_bn4f = batch_norm(name='d_bn4f')
 
         self.g_bn0 = batch_norm(name='g_bn0')
         self.g_bn1 = batch_norm(name='g_bn1')
@@ -305,44 +307,41 @@ class DCGAN(object):
     def discriminator(self, audio_sample, y=None, reuse=False, include_fourier=True):
         if reuse:
             tf.get_variable_scope().reuse_variables()
-        h4_dim = self.sample_length*self.df_dim//32
+        h_dim = self.sample_length*self.df_dim//16
 
-        h0 = lrelu(conv1d(audio_sample, self.df_dim, name='d_h0_conv'))
+        h0 = lrelu(conv1d(audio_sample,  self.df_dim, d_w=1, name='d_h0_conv'))
         h1 = lrelu(self.d_bn1(conv1d(h0, self.df_dim*2, name='d_h1_conv')))
         h2 = lrelu(self.d_bn2(conv1d(h1, self.df_dim*4, name='d_h2_conv')))
         h3 = lrelu(self.d_bn3(conv1d(h2, self.df_dim*8, name='d_h3_conv')))
+        h4 = lrelu(self.d_bn4(conv1d(h3, self.df_dim*16, name='d_h4_conv')))
         #import IPython; IPython.embed()
         if self.use_disc: #not yet supported
             h_disc = mb_disc_layer(tf.reshape(h3, [self.batch_size, -1]),name='mb_disc')
-            h4 = linear(h_disc, 1, name='d_h3_lin')
+            h4 = linear(h_disc, 1, name='d_h5_lin')
         else:
-            h4 = linear(tf.reshape(h3, [self.batch_size, -1]), 1, name='d_h3_lin',missing_dim=h4_dim)
+            h5 = linear(tf.reshape(h4, [self.batch_size, -1]), 1, name='d_h5_lin',missing_dim=h_dim)
 
         if include_fourier:
             fourier_sample = get_fourier(audio_sample)
-            h0_f = lrelu(conv1d(fourier_sample, self.df_dim, name='d_h0_f_conv'))
+            h0_f = lrelu(conv1d(fourier_sample, self.df_dim, d_w=1, name='d_h0_f_conv'))
             h1_f = lrelu(self.d_bn1f(conv1d(h0_f, self.df_dim*2, name='d_h1_f_conv')))
             h2_f = lrelu(self.d_bn2f(conv1d(h1_f, self.df_dim*4, name='d_h2_f_conv')))
             h3_f = lrelu(self.d_bn3f(conv1d(h2_f, self.df_dim*8, name='d_h3_f_conv')))
-            #import IPython; IPython.embed()
-            if self.use_disc: #not yet supported
-                h_f_disc = mb_disc_layer(tf.reshape(h3_f, [self.batch_size, -1]),name='f_mb_disc')
-                h4_f = linear(h_f_disc, 1, name='d_h3_f_lin')
-            else:
-                h4_f = linear(tf.reshape(h3_f, [self.batch_size, -1]), 1, name='d_h3_f_lin', missing_dim=h4_dim)
-            h5 = linear(tf.concat(1,[h4,h4_f]),1, name='d_h5')
+            h4_f = lrelu(self.d_bn4f(conv1d(h3_f, self.df_dim*16, name='d_h4_f_conv')))
+            h5_f = linear(tf.reshape(h4_f, [self.batch_size, -1]), 1, name='d_h5_f_lin', missing_dim=h_dim)
+            h6 = linear(tf.concat(1,[h5,h5_f]),1, name='d_h6')
             #h5 = (h4+h4_f)/2
         else:
-            h5 = h4
+            h6 = h5
             #import IPython; IPython.embed()
 
-        return tf.nn.sigmoid(h5), h5
+        return tf.nn.sigmoid(h6), h6
 
     def generator(self, z, y=None):
 
         s = self.output_length
 
-        sh = [s//2, s//4, s//8, s//16, s//32, int(s/32/4**1), int(s/32/4**2), int(s/32/4**3)]
+        sh = [s, s//2, s//4, s//8, s//16, int(s/16/4**1), int(s/16/4**2), int(s/16/4**3)]
 
         # project `z` and reshape
         self.z_, self.h0_w, self.h0_b = linear(z, self.gf_dim*16*sh[-1], 'g_h0_lin', with_w=True)
@@ -375,7 +374,7 @@ class DCGAN(object):
             [self.batch_size, sh[-8], self.gf_dim*1], d_w=2, name='g_h7', with_w=True)
         h7 = tf.nn.relu(self.g_bn7(h7))
         h8, self.h8_w, self.h8_b = deconv1d(h7,
-            [self.batch_size, s, self.c_dim], d_w=2, name='g_h8', with_w=True)
+            [self.batch_size, s, self.c_dim], d_w=1, name='g_h8', with_w=True)
 
         return tf.nn.tanh(h8)
 
@@ -383,7 +382,7 @@ class DCGAN(object):
         tf.get_variable_scope().reuse_variables()
 
         s = self.output_length
-        sh = [s//2, s//4, s//8, s//16, s//32, int(s/32/4**1), int(s/32/4**2), int(s/32/4**3)]
+        sh = [s, s//2, s//4, s//8, s//16, int(s/16/4**1), int(s/16/4**2), int(s/16/4**3)]
 
         # project `z` and reshape
         self.z_ = linear(z, self.gf_dim*16*sh[-1], 'g_h0_lin')
@@ -418,7 +417,7 @@ class DCGAN(object):
             [self.batch_size, sh[-8], self.gf_dim*1], d_w=2, name='g_h7')
         h7 = tf.nn.relu(self.g_bn7(h7))
         h8 = deconv1d(h7,
-            [self.batch_size, s, self.c_dim], d_w=2, name='g_h8')
+            [self.batch_size, s, self.c_dim], d_w=1, name='g_h8')
         return tf.nn.tanh(h8)
 
         # s2, s4, s8, s16, s32 = int(s/2/2), int(s/4/4), int(s/8/8), int(s/16/16), int(s/32/32)
