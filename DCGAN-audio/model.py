@@ -12,7 +12,7 @@ from postprocess import *
 
 class DCGAN(object):
     def __init__(self, sess,
-                 batch_size=1, sample_length=1024,
+                 batch_size=1, sample_length=1024, gen_fourier=True, 
                  y_dim=None, z_dim=100, gf_dim=64, df_dim=64, run_g=2,
                  gfc_dim=1024, dfc_dim=1024, c_dim=1, dataset_name='default', data_dir=None,
                  audio_params=None, checkpoint_dir=None, out_dir=None, use_disc=False, use_fourier=True, mode='generate'):
@@ -383,7 +383,7 @@ class DCGAN(object):
         h8, self.h8_w, self.h8_b = deconv1d(h7,
             [self.batch_size, s, self.c_dim], d_w=1, name='g_h8', with_w=True)
 
-        return tf.nn.tanh(h8)
+        return tf.nn.tanh(get_im_fourier(h8))
 
     def sampler(self, z, y=None):
         tf.get_variable_scope().reuse_variables()
