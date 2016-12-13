@@ -26,6 +26,16 @@ def get_fourier(sample):
     c_sample = tf.expand_dims(tf.pack(c_list),-1)  #complex 64
     fourier_sample = tf.concat(2,[tf.real(c_sample), tf.imag(c_sample)])
     return fourier_sample
+
+def get_im_fourier(sample):
+    temp = tf.complex(sample,tf.zeros_like(sample))[...,0]
+    c_list = []
+    for i in range(temp.get_shape()[0]):
+      c_list.append(tf.ifft(temp[i]))
+    c_sample = tf.expand_dims(tf.pack(c_list),-1)  #complex 64
+    #real_sample = tf.concat(2,[tf.real(c_sample), tf.imag(c_sample)])
+    real_sample = tf.real(c_sample)
+    return real_sample
 #G
 def save_waveform(waveform, filename, title=None, maxplot=4):
     num_plot = min(maxplot, waveform.shape[0])
