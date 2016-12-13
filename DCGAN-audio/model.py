@@ -248,12 +248,19 @@ class DCGAN(object):
                         D_fake = self.D_.eval({self.z: batch_z}).mean()
 
                         # Update G network run_g times
-                        for i in range(self.run_g):
+                        i = 0
+                        while errG > 0.9:
+                            
                             _, summary_str = self.sess.run([g_optim, self.g_sum],
                                 feed_dict={ self.z: batch_z })
                             self.writer.add_summary(summary_str, counter)
+                            i+=1
+                            if i >self.run_g: break
+                            else:
+                                errG = self.g_loss.eval({self.z: batch_z})
 
-                        if errD > 0.45 and errG < 0.8:
+
+                        if errD > 0.45:
                             # only update discriminator if loss are within given bounds
                             _, summary_str = self.sess.run([d_optim, self.d_sum],
                                 feed_dict={ self.z: batch_z })
