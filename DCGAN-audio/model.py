@@ -190,11 +190,11 @@ class DCGAN(object):
         # if config.dataset == 'wav':
         #     coord = tf.train.Coordinator()
         #     reader = self.load_wav(coord)
-
-        d_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
-                          .minimize(self.d_loss, var_list=self.d_vars)
-        g_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
-                          .minimize(self.g_loss, var_list=self.g_vars)
+        with tf.variable_scope('Adam'):
+            d_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
+                              .minimize(self.d_loss, var_list=self.d_vars)
+            g_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
+                              .minimize(self.g_loss, var_list=self.g_vars)
         #import IPython; IPython.embed()
         init = tf.initialize_all_variables()
         self.sess.run(init)
